@@ -44,4 +44,4 @@ The system integrates STM32 and ESP32 to simulate sensor readings, transmit data
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ### Diagram
-![Pic](./IoTSystemSiagram.png)
+![Pic](./IoTSystemDiagram.png)
