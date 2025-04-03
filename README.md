@@ -1,6 +1,6 @@
 # IoT System with STM32 and ESP32
 
-This project demonstrates the design and development of an IoT system using STM32 and ESP32 microcontrollers. The system involves sensor simulation on STM32, real-time task scheduling on ESP32 with FreeRTOS, and cloud integration via AWS IoT Core.
+This project demonstrates the design and development of an IoT system using STM32 and ESP32 MCUs. The system involves sensor simulation on STM32, real-time task scheduling on ESP32 with FreeRTOS, and cloud integration via AWS IoT Core.
 
 ## Project Overview
 
