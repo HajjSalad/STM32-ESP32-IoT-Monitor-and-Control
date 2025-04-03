@@ -97,7 +97,9 @@ void wifi_connection()
     wifi_config_t wifi_configuration = {
         .sta = {
             .ssid = SSID,
-            .password = PASS}};
+            .password = PASS
+            }
+        };
     esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_configuration);
     // 3 - Wi-Fi Start Phase
     esp_wifi_start();
@@ -128,31 +130,35 @@ void post_rest_function(uint32_t *bufferSend)
         .client_cert_pem = (const char *)certificate_start,
         .client_key_pem = (const char *)private_start,
         .event_handler = client_event_post_handler};
-        
+    
     esp_http_client_handle_t client = esp_http_client_init(&config_post);
 
-    char post_data[512];
-    int offset = 0;         // To keep track of where we are in the post_data array
+    char post_data[256]; // Buffer for JSON string
     
-    // Start the JSON object
-    offset += snprintf(post_data + offset, sizeof(post_data) - offset, "{");
-
     for (int i = 0; i < SENSOR_NUM; i += 2) {
         int roomIndex = i / 2;
-        offset += snprintf(post_data + offset, sizeof(post_data) - offset,
-                           "\"room_%03d\":{\"temperature\":%lu,\"motion\":%lu},",
-                           101 + roomIndex,  // room number (e.g., room_101)
-                           bufferSend[i],     // temperature value
-                           bufferSend[i + 1]); // motion value
+        
+        // Format JSON payload for one sensor reading
+        snprintf(post_data, sizeof(post_data),
+                 "{"
+                 "\"temperature\":%lu,"  // Temperature measure
+                 "\"motion\":%lu,"        // Motion measure
+                 "\"sensor_id\":\"%03d\"," // Sensor ID as string
+                 "\"room\":\"%03d\""    // Room number as string
+                 "}",
+                 bufferSend[i],     // Temperature value
+                 bufferSend[i + 1], // Motion value
+                 101 + roomIndex,   // Sensor ID
+                 101 + roomIndex);  // Room number
+
+        // Set HTTP headers and post data
+        esp_http_client_set_post_field(client, post_data, strlen(post_data));
+        esp_http_client_set_header(client, "Content-Type", "application/json");
+        
+        // Send the HTTP request
+        esp_http_client_perform(client);
     }
-
-    // Remove the last comma and close the JSON object
-    post_data[offset - 1] = '}';
-
-    esp_http_client_set_post_field(client, post_data, strlen(post_data));
-    esp_http_client_set_header(client, "Content-Type", "application/json");
-
-    esp_http_client_perform(client);
+    
     esp_http_client_cleanup(client);
 }
 

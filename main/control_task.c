@@ -6,14 +6,17 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "soc/uart_struct.h"
 #include "driver/uart.h"
 #include "driver/gpio.h"
+
 #include "esp_system.h"
 #include "sdkconfig.h"
 #include "esp_log.h"
+
 #include "demo.h"
 #include "wrapper.h"
 #include "priorities.h"
