@@ -39,9 +39,5 @@ The system integrates STM32 and ESP32 to simulate sensor readings, transmit data
 - **Data Visualization**: Implement a dashboard to visualize the sensor data stored in AWS Timestream.
 - **Machine Learning**: Implement anomaly detection using machine learning models on the ESP32 or in the cloud.
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ### Diagram
 ![Pic](./IoTSystemDiagram.png)
