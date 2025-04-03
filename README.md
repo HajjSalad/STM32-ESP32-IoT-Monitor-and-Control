@@ -13,7 +13,7 @@ The system integrates STM32 and ESP32 to simulate sensor readings, transmit data
 - **Object-Oriented Design**: Applied OOP principles to design a hierarchical class structure for sensor and device management.
 - **Cloud Integration**: Data is transmitted to AWS IoT Core for real-time monitoring, and AWS IoT Rules are used to store data in AWS Timestream for analytics.
   
-## Tools & Software
+### Tools & Software
 
 - **STM32 Development**:
   - STM32CubeIDE (with HAL for configuration)
@@ -28,13 +28,13 @@ The system integrates STM32 and ESP32 to simulate sensor readings, transmit data
   - STM32 MCU
   - ESP32 MCU
 
-## System Architecture
+### System Architecture
 
 - **STM32**: Simulates sensor data and transmits it to the ESP32 over UART.
 - **ESP32**: Handles real-time scheduling with FreeRTOS, manages sensors, and communicates with the cloud (AWS IoT Core).
 - **Cloud**: AWS IoT Core handles data reception, and AWS IoT Rules send data to AWS Timestream for storage and analysis.
 
-## Future Enhancements
+### Future Enhancements
 
 - **Data Visualization**: Implement a dashboard to visualize the sensor data stored in AWS Timestream.
 - **Machine Learning**: Implement anomaly detection using machine learning models on the ESP32 or in the cloud.
