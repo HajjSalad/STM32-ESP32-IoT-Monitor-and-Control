@@ -117,6 +117,7 @@ static void controlTask(void *arg){
         setSensorValues();                  // Set sensor values
         updateDevices();                    // Update devices on sensor values 
         post_rest_function(bufferSend);     // Send data to AWS IoT
+        printf("\n");
 
         if (xSemaphoreTake(UARTSemaphore, pdMS_TO_TICKS(50)) == pdTRUE) {
             printf("Control Task Running...\n\r");
