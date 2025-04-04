@@ -41,3 +41,6 @@ The system integrates STM32 and ESP32 to simulate sensor readings, transmit data
 
 ### Diagram
 ![Pic](./IoTSystemDiagram.png)
+
+#### Demo
+![Demo](./IoTSystemGIF.gif)
