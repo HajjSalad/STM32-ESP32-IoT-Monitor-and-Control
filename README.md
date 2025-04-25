@@ -146,5 +146,5 @@ turnOffHeater(room1);
 ![Pic](./IoTSystemDiagram.png)
 
 #### Demo
-AWS IoT Core                                                        Serial Terminal
+AWS IoT Core\t\t\t\t\t\t\tSerial Terminal
 ![Demo](./IoTSystemGIF.gif)
