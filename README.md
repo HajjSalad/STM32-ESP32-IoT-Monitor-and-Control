@@ -74,10 +74,10 @@ Ensures reliable data transfer between STM32 (transmitter) and ESP32 (receiver):
 &nbsp;&nbsp;&nbsp;⎔ **ESP32 MCU** - Acts as the cloud gateway, handling connectivity and communication with AWS   
 
 ### Hardware Connection
-|     **STM32 PIN**     |  **Interface**   |     **ESP32 Pin**         |
-|    PA9 - USART1_TX    |      UART        |     GPIO17 - UART2_TX     |
-|    PA10 - USART1_RX   |      UART        |     GPIO16 - UART2_RX     |
-|        GND            |      GND         |      GND                  |
+|     **STM32 PIN**     |  **Interface**   |     **ESP32 Pin**         |  
+|    PA9 - USART1_TX    |      UART        |     GPIO17 - UART2_TX     |  
+|    PA10 - USART1_RX   |      UART        |     GPIO16 - UART2_RX     |  
+|        GND            |      GND         |      GND                  |  
 
 ---
 ### 📂 Project Code Structure
