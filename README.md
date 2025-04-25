@@ -49,7 +49,29 @@ Ensures reliable data transfer between STM32 (transmitter) and ESP32 (receiver):
 &nbsp;&nbsp;&nbsp;• Specialized subclasses: TempSensor, MotionDetector.  
 🔌 `Device` (Base Class)  
 &nbsp;&nbsp;&nbsp;• Common interface for all controllable devices.  
-&nbsp;&nbsp;&nbsp;• Specialized subclasses: Light, AC, Heater. 
+&nbsp;&nbsp;&nbsp;• Specialized subclasses: Light, AC, Heater.
+
+
+🪟 A room can either be a BedRoom or a LivingRoom
+🚪 Each LivingRoom or BedRoom has: 
+&nbsp;&nbsp;&nbsp;• 1 TempSensor  1 MotionDetector
+&nbsp;&nbsp;&nbsp;• 1 Light  1 AC   1 Heater
+
+💡 **Usage Example**
+```c
+// Create a room and pass roomNum
+int roomNum = 101;
+void* room1 = createLivingRoom(roomNum);
+if(!room1) {
+    printf("LivingRoom creation failed.\n");
+    return;
+} else {
+    printf("LivingRoom %d created.\n\r", roomNum);
+}
+
+// Change state of device
+turnOffHeater(room1);
+```
 
 ---
 ### 🏗 System Architecture
