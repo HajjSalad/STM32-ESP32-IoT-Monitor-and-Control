@@ -79,7 +79,7 @@ setTempSensorValue(room1, tempValue);
 setMotionDetectorValue(room1, motionValue);
 ```
 ⏲️ **Device Control Based on Sensor Data**
-```
+```c
 if (getMotionDetectorValue(room1)) {         // Turn on light if motion is detected
     turnOnLight(room1);
     printf("Light turned ON in Room %d\n\r", roomNum);
