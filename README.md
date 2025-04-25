@@ -14,13 +14,13 @@ A complete IoT demonstration platform featuring:
 🧪 **Sensor Simulation** [Link](https://github.com/HajjSalad/STM32-Sensor-Data-Simulation)   
 &nbsp;&nbsp;&nbsp;• Simulated sensor readings using STM32 HAL, including ADC, PWM, and Timers.  
 🔁 **Reliable Data Transfer**  
-&nbsp;&nbsp;&nbsp;• Data transmission from STM32 to ESP32 via UART with a handshake mechanism. 
+&nbsp;&nbsp;&nbsp;• Data transmission from STM32 to ESP32 via UART with a handshake mechanism.   
 ⏱️ **Real-Time Scheduling on ESP32**  
 &nbsp;&nbsp;&nbsp;• Leveraging FreeRTOS for efficient real-time task scheduling and management.  
 🧩 **Modular OOP Architecture**  
 &nbsp;&nbsp;&nbsp;• Applied OOP principles to design a hierarchical class structure for sensor and device management.  
 ☁️ **Cloud Integration**    
-&nbsp;&nbsp;&nbsp;• Data is transmitted to AWS IoT Core for real-time monitoring
+&nbsp;&nbsp;&nbsp;• Data is transmitted to AWS IoT Core for real-time monitoring  
 &nbsp;&nbsp;&nbsp;• AWS IoT Rules are used to store data in AWS Timestream for analytics.  
 
 ---
