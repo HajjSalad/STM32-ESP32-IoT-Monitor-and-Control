@@ -129,7 +129,7 @@ if (temp > 25.0) {                           // Temp too hot
 
 ### Hardware Connection
 ```
-|     **STM32 PIN**     |  **Interface**   |     **ESP32 Pin**         |  
+|       STM32 PIN       |    Interface     |     ESP32 Pin             |  
 |    PA9 - USART1_TX    |      UART        |     GPIO17 - UART2_TX     |  
 |    PA10 - USART1_RX   |      UART        |     GPIO16 - UART2_RX     |  
 |        GND            |      GND         |      GND                  |  
