@@ -1,54 +1,102 @@
-# IoT System with STM32 and ESP32
+## IoT System with STM32 and ESP32
 
-This project demonstrates the design and development of an IoT system using STM32 and ESP32 MCUs. The system involves sensor simulation on STM32, real-time task scheduling on ESP32 with FreeRTOS, and cloud integration via AWS IoT Core.
+A scalable IoT solution combining STM32 for sensor simulation and ESP32 for cloud connectivity, built with FreeRTOS and AWS IoT Core.
 
-## Project Overview
+## 🚀 Project Overview
+A complete IoT demonstration platform featuring:
+- **STM32** as sensor data generator (simulating digital sensors via HAL)
+- **ESP32** as edge gateway with FreeRTOS real-time scheduling
+- **AWS IoT Core** for secure cloud connectivity
+- **Infrastructure-as-Code** provisioning with Terraform
 
-The system integrates STM32 and ESP32 to simulate sensor readings, transmit data, and store it in the cloud for real-time monitoring and analytics. The STM32 uses the Hardware Abstraction Layer (HAL) to simulate sensor data, while the ESP32 handles data processing and cloud communication via WiFi and HTTP protocols.
+---
+### 🔑 Key Features:
+🧪 **Sensor Simulation** [Link](https://github.com/HajjSalad/STM32-Sensor-Data-Simulation)   
+&nbsp;&nbsp;&nbsp;• Simulated sensor readings using STM32 HAL, including ADC, PWM, and Timers.  
+🔁 **Reliable Data Transfer**  
+&nbsp;&nbsp;&nbsp;• Data transmission from STM32 to ESP32 via UART with a handshake mechanism. 
+⏱️ **Real-Time Scheduling on ESP32**  
+&nbsp;&nbsp;&nbsp;• Leveraging FreeRTOS for efficient real-time task scheduling and management.  
+🧩 **Modular OOP Architecture**  
+&nbsp;&nbsp;&nbsp;• Applied OOP principles to design a hierarchical class structure for sensor and device management.  
+☁️ **Cloud Integration**    
+&nbsp;&nbsp;&nbsp;• Data is transmitted to AWS IoT Core for real-time monitoring, and AWS IoT Rules are used to store data in AWS Timestream for analytics.  
 
-#### Key Features:
-- **[Sensor Simulation on STM32](https://github.com/HajjSalad/STM32-Sensor-Data-Simulation)**: Simulated sensor readings using STM32 HAL, including ADC, PWM, and Timers.
-- **Reliable Data Transfer**: Data transmission from STM32 to ESP32 via UART with a handshake mechanism.
-- **Real-Time Scheduling on ESP32**: Leveraging FreeRTOS for efficient real-time task scheduling and management.
-- **Object-Oriented Design**: Applied OOP principles to design a hierarchical class structure for sensor and device management.
-- **Cloud Integration**: Data is transmitted to AWS IoT Core for real-time monitoring, and AWS IoT Rules are used to store data in AWS Timestream for analytics.
-  
-#### Tools & Software
+---
+### 📡 **Interrupt-Driven Handshake UART**
+Ensures reliable data transfer between STM32 (transmitter) and ESP32 (receiver):
+```
+|         STM32                 |         ESP32                    |
+|    Send: "READY?"             |                                  |
+|                               |   Received: "READY?"             |
+|                               |   Response: "YES"                |
+|   Received: "YES"             |                                  |
+|   Send: <DATA_PACKET>         |                                  |
+|                               |   Received: <DATA_PACKET>        |
+|                               |   Responded with: "ACK"          |
+|   Received: "ACK"             |                                  |
+|   [Transmission Complete]     |   [Process Data]                 |
+```
 
-- **STM32 Development**:
-  - STM32CubeIDE (with HAL for configuration)
-  - ST-Link Debugger
-- **ESP32 Development**:
-  - ESP-IDF
-  - VS Code (with UART Debugging)
-- **Cloud**:
-  - AWS IoT Core
-  - AWS Timestream
-- **Hardware**:
-  - STM32 MCU
-  - ESP32 MCU
+### 🧱 Modular, Scalable Sensor & Device Architecture
+🏠 `Room` (Base Class)  
+&nbsp;&nbsp;&nbsp;• Abstract representation of a room within the system.  
+&nbsp;&nbsp;&nbsp;• Specialized subclasses: LivingRoom, BedRoom.  
+🌡️ `Sensor` (Base Class)  
+&nbsp;&nbsp;&nbsp;• Generic interface for all sensor types.  
+&nbsp;&nbsp;&nbsp;• Specialized subclasses: TempSensor, MotionDetector.  
+🔌 `Device` (Base Class)  
+&nbsp;&nbsp;&nbsp;• Common interface for all controllable devices.  
+&nbsp;&nbsp;&nbsp;• Specialized subclasses: Light, AC, Heater. 
 
-#### System Architecture
+---
+### 🏗 System Architecture
+```
+[STM32 (Simulate data)] → [UART] → [ESP32 Cloud Gateway] → [MQTT] → [Cloud Dashboard]
+```
 
-- **STM32**: Simulates sensor data and transmits it to the ESP32 over UART.
-- **ESP32**: Handles real-time scheduling with FreeRTOS, manages sensors, and communicates with the cloud (AWS IoT Core).
-- **Cloud**: AWS IoT Core handles data reception, and AWS IoT Rules send data to AWS Timestream for storage and analysis.
+### 🛠️ Development Tools & Software
+𐂷 **Microcontroller Development**  
+&nbsp;&nbsp;&nbsp;⎔ **STM32 Development**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• STM32CubeIDE – Integrated development environment for STM32 firmware   
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• ST-Link Debugger – Enables flashing and debugging over SWD      
+&nbsp;&nbsp;&nbsp;⎔ **ESP32 Development**:  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• ESP-IDF - Official development framework for ESP32 firmware  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• VS Code - Development environment with ESP-IDF integration and UART debugging    
+🌐 **Cloud Infrastructure**    
+&nbsp;&nbsp;&nbsp;⎔ **AWS IoT Core** - Secure MQTT messaging and device connectivity     
+&nbsp;&nbsp;&nbsp;⎔ **AWS Timestream** - Time-series database for storing and analyzing sensor data     
+&nbsp;&nbsp;&nbsp;⎔ **Terraform** - Automates the provisioning and configuration of AWS infrastructure     
+⚙️ **Hardware**  
+&nbsp;&nbsp;&nbsp;⎔ **STM32 MCU** - Microcontroller used for real-time sensor data acquisition and local processing     
+&nbsp;&nbsp;&nbsp;⎔ **ESP32 MCU** - Acts as the cloud gateway, handling connectivity and communication with AWS   
 
-#### OOP Design
-##### **`Room` Base class**
-- Represents a room in the home.
-- Derived classes: `LivingRoom`, `BedRoom`.
-##### **`Sensor` Base Class**
-- Represents a sensor.
-- Derived classes: `TempSensor`, `MotionDetector`.
-##### **`Device` Base Class**
-- Represents a device.
-- Derived classes: `Light`, `AC`, `Heater`.
-- 
-#### Future Enhancements
+### Hardware Connection
 
-- **Data Visualization**: Implement a dashboard to visualize the sensor data stored in AWS Timestream.
-- **Machine Learning**: Implement anomaly detection using machine learning models on the ESP32 or in the cloud.
+
+---
+### 📂 Project Code Structure
+```
+📁 Smart-Fire-Detection-System/
+│── 📁 stm32_sensor_node/
+│   ├── 📄 main.c               (Entry point of the program)
+│   ├── 📄 factory.cpp / .h     (Abstract Factory pattern implementation)
+│   ├── 📄 sensor.cpp / .h      (Base sensor classes and interfaces)
+│   ├── 📄 wrapper.cpp / .h     (Hardware abstraction layer wrappers)
+│   ├── 📄 simulate.c / .h      (Sensor data simulation)
+│   ├── 📄 spi.c / .h           (SPI & GPIO Interrupt Communication)
+│   ├── 📄 uart.c / .h          (UART Communication)
+│   ├── 📄 systick.c / .h       (Systick Timer)
+│   ├── 📄 Makefile             (Build system configuration)
+│── 📁 esp32_facp_cloud_node/
+│   ├── 📄 main.c               (Entry point of the program, Tasks)
+│   ├── 📄 spi.c / .h           (SPI & GPIO Interrupt Communication )
+│   ├── 📄 uart.c / .h          (UART Communication)
+│   ├── 📄 wifi.c / .h          (WiFi Connectivity)
+│   ├── 📄 cloud.c / .h         (MQTT for AWS Connectivity)
+│   ├── 📄 CMakeLists.txt       (Build system configuration)
+│── 📄 README.md  (Documentation)
+```
 
 ### Diagram
 ![Pic](./IoTSystemDiagram.png)
