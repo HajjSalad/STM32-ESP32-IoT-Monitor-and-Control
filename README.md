@@ -57,7 +57,7 @@ Ensures reliable data transfer between STM32 (transmitter) and ESP32 (receiver):
 &nbsp;&nbsp;&nbsp;• 1 TempSensor  1 MotionDetector
 &nbsp;&nbsp;&nbsp;• 1 Light  1 AC   1 Heater
 
-💡 **Usage Example**
+💡 **Usage Example**  
 ```c
 // Create a room and pass roomNum
 int roomNum = 101;
