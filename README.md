@@ -57,25 +57,52 @@ Ensures reliable data transfer between STM32 (transmitter) and ESP32 (receiver):
 &nbsp;&nbsp;&nbsp;• 1 `TempSensor`, 1 `MotionDetector`  
 &nbsp;&nbsp;&nbsp;• 1 `Light`, 1 `AC`, 1 `Heater`  
 
-💡 **Usage Example**  
+💡 **Room Creation and Sensor Usage Example**  
 ```c
 // Create a LivingRoom instance with a specific room number
 int roomNum = 101;
 void* room1 = createLivingRoom(roomNum);
 
-if (!room1) {
+if (!room1) {            // Check if room creation successful
     printf("LivingRoom creation failed.\n");
     return;
 } else {
     printf("LivingRoom %d created.\n\r", roomNum);
 }
 
-// Set and retrieve sensor values
-setTempSensorValue(room1, 24.5);
-bool motion = getMotionDetectorValue(room1);
+// Sensor values (example data)
+float tempValue = 27.5;
+int motionValue = 1;  // 1 = motion detected, 0 = no motion
 
-// Control devices
-turnOffHeater(room1);
+// Set sensor values
+setTempSensorValue(room1, tempValue);
+setMotionDetectorValue(room1, motionValue);
+```
+⏲️ **Device Control Based on Sensor Data**
+```
+if (getMotionDetectorValue(room1)) {         // Turn on light if motion is detected
+    turnOnLight(room1);
+    printf("Light turned ON in Room %d\n\r", roomNum);
+}
+
+float temp = getTempSensorValue(room1);      // Read current temperature
+
+// Control AC and Heater based on temperature range
+if (temp > 25.0) {                           // Temp too hot
+    turnOnAC(room1);
+    turnOffHeater(room1);
+    printf("AC turned ON in Room %d\n\r", roomNum);
+
+} else if (temp < 20.0) {                    // Temp too cold
+    turnOffAC(room1);
+    turnOnHeater(room1);
+    printf("Heater turned ON in Room %d\n\r", roomNum);
+
+} else {                // Temperature is in comfortable range (20–25°C)
+    turnOffAC(room1);
+    turnOffHeater(room1);
+    printf("Heater and AC turned OFF in Room %d\n\r", roomNum);
+}
 ```
 
 ---
