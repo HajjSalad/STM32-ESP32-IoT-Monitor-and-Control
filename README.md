@@ -39,6 +39,7 @@ Ensures reliable data transfer between STM32 (transmitter) and ESP32 (receiver):
 |   [Transmission Complete]     |   [Process Data]                 |
 ```
 
+---
 ### 🧱 Modular, Scalable Sensor & Device Architecture
 🏠 `Room` (Base Class)  
 &nbsp;&nbsp;&nbsp;• Abstract representation of a room within the system.  
