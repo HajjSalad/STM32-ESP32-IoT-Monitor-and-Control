@@ -51,11 +51,11 @@ Ensures reliable data transfer between STM32 (transmitter) and ESP32 (receiver):
 &nbsp;&nbsp;&nbsp;• Common interface for all controllable devices.  
 &nbsp;&nbsp;&nbsp;• Specialized subclasses: Light, AC, Heater.
 
-🧩 **Room Configuration**
-🪟 A `Room` can either be a `BedRoom` or a `LivingRoom`
-🚪 Each `LivingRoom` or `BedRoom` contains:
-&nbsp;&nbsp;&nbsp;• 1 `TempSensor`, 1 `MotionDetector`
-&nbsp;&nbsp;&nbsp;• 1 `Light`, 1 `AC`, 1 `Heater`
+🧩 **Room Configuration**  
+🪟 A `Room` can either be a `BedRoom` or a `LivingRoom`  
+🚪 Each `LivingRoom` or `BedRoom` contains:  
+&nbsp;&nbsp;&nbsp;• 1 `TempSensor`, 1 `MotionDetector`  
+&nbsp;&nbsp;&nbsp;• 1 `Light`, 1 `AC`, 1 `Heater`  
 
 💡 **Usage Example**  
 ```c
