@@ -54,7 +54,7 @@ Ensures reliable data transfer between STM32 (transmitter) and ESP32 (receiver):
 ---
 ### 🏗 System Architecture
 ```
-[STM32 (Simulate data)] → [UART] → [ESP32 Cloud Gateway] → [MQTT] → [Cloud Dashboard]
+[STM32 (Simulate data)] → [UART] → [ESP32 (FreeRTOS & Cloud Gateway)] → [MQTT] → [Cloud Dashboard]
 ```
 
 ### 🛠️ Development Tools & Software
@@ -74,7 +74,10 @@ Ensures reliable data transfer between STM32 (transmitter) and ESP32 (receiver):
 &nbsp;&nbsp;&nbsp;⎔ **ESP32 MCU** - Acts as the cloud gateway, handling connectivity and communication with AWS   
 
 ### Hardware Connection
-
+|     **STM32 PIN**     |  **Interface**   |     **ESP32 Pin**         |
+|    PA9 - USART1_TX    |      UART        |     GPIO17 - UART2_TX     |
+|    PA10 - USART1_RX   |      UART        |     GPIO16 - UART2_RX     |
+|        GND            |      GND         |      GND                  |
 
 ---
 ### 📂 Project Code Structure
