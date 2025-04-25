@@ -20,7 +20,8 @@ A complete IoT demonstration platform featuring:
 🧩 **Modular OOP Architecture**  
 &nbsp;&nbsp;&nbsp;• Applied OOP principles to design a hierarchical class structure for sensor and device management.  
 ☁️ **Cloud Integration**    
-&nbsp;&nbsp;&nbsp;• Data is transmitted to AWS IoT Core for real-time monitoring, and AWS IoT Rules are used to store data in AWS Timestream for analytics.  
+&nbsp;&nbsp;&nbsp;• Data is transmitted to AWS IoT Core for real-time monitoring
+&nbsp;&nbsp;&nbsp;• AWS IoT Rules are used to store data in AWS Timestream for analytics.  
 
 ---
 ### 📡 **Interrupt-Driven Handshake UART**
@@ -77,24 +78,38 @@ Ensures reliable data transfer between STM32 (transmitter) and ESP32 (receiver):
 ---
 ### 📂 Project Code Structure
 ```
-📁 Smart-Fire-Detection-System/
+📁 IoT-Control-Monitor-System/            # Theybdidhod
 │── 📁 stm32_sensor_node/
-│   ├── 📄 main.c               (Entry point of the program)
-│   ├── 📄 factory.cpp / .h     (Abstract Factory pattern implementation)
-│   ├── 📄 sensor.cpp / .h      (Base sensor classes and interfaces)
-│   ├── 📄 wrapper.cpp / .h     (Hardware abstraction layer wrappers)
-│   ├── 📄 simulate.c / .h      (Sensor data simulation)
-│   ├── 📄 spi.c / .h           (SPI & GPIO Interrupt Communication)
-│   ├── 📄 uart.c / .h          (UART Communication)
-│   ├── 📄 systick.c / .h       (Systick Timer)
-│   ├── 📄 Makefile             (Build system configuration)
-│── 📁 esp32_facp_cloud_node/
-│   ├── 📄 main.c               (Entry point of the program, Tasks)
-│   ├── 📄 spi.c / .h           (SPI & GPIO Interrupt Communication )
-│   ├── 📄 uart.c / .h          (UART Communication)
-│   ├── 📄 wifi.c / .h          (WiFi Connectivity)
-│   ├── 📄 cloud.c / .h         (MQTT for AWS Connectivity)
-│   ├── 📄 CMakeLists.txt       (Build system configuration)
+│   ├── 📄 Src
+|   │   ├── 📄 main.c                     ()
+|   │   ├── 📄 stm32f4xx_hal_msp.c        ()
+|   │   ├── 📄 stm32f4xx_it.c             ()
+|   │   ├── 📄 syscalls.c                 ()
+|   │   ├── 📄 sysmem.c                   ()
+|   │   ├── 📄 system_stm32f4xx.c         ()
+|   │   ├── 📄 startup_stm32f44gretx.s    ()
+│   ├── 📄 STM32F446RETX_FLASH.ld         ()
+│   ├── 📄 STM32F446RETX_RAM.ld           ()
+│   ├── 📄 STM32_UART_ESP32.ioc           ()
+│── 📁 esp32_cloud_gateway/
+│   ├── 📄 main
+|   │   ├── 📄 main.c                     ()
+|   │   ├── 📄 control_task.c / .h        ()
+|   │   ├── 📄 uart.c / .h                (UART Communication)
+|   │   ├── 📄 wifi.c / .h                (WiFi Connectivity)
+|   │   ├── 📄 cloud.c / .h               (MQTT for AWS Connectivity)
+|   │   ├── 📄 CMakeLists.txt             (Build system configuration)
+│   ├── 📄 Components/objects
+|   │   ├── 📄 sensors.cpp / .h           ()
+|   │   ├── 📄 devices.cpp / .h           ()
+|   │   ├── 📄 rooms.cpp / .h             ()
+|   │   ├── 📄 wrapper.cpp / .h           ()
+|   │   ├── 📄 CmakeLists.txt             ()
+│   ├── 📄 iot-aws-terraform
+|   │   ├── 📄 main.tf                    ()
+|   │   ├── 📄 outputs.tf                 ()
+|   │   ├── 📄 terraform.tfstate          ()
+│   ├── 📄 CMakeLists.txt             (Build system configuration)
 │── 📄 README.md  (Documentation)
 ```
 
