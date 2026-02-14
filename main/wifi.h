@@ -1,7 +1,7 @@
-#ifndef MY_DATA
-#define MY_DATA
+#ifndef WIFI_H
+#define WIFI_H
 
 #define SSID "House 1115"
 #define PASS "chance713block"
 
-#endif
+#endif  // WIFI_H

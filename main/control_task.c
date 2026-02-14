@@ -2,28 +2,24 @@
 //    control_task.c - Control all devices and sensors based on input.
 //
 
+#include <time.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "soc/uart_struct.h"
-#include "driver/uart.h"
-#include "driver/gpio.h"
-
-#include "esp_system.h"
-#include "sdkconfig.h"
-#include "esp_log.h"
-
-#include "demo.h"
 #include "wrapper.h"
 #include "priorities.h"
 #include "control_task.h"
-#include "main.h"
 
-extern SemaphoreHandle_t UARTSemaphore;
+#include "esp_log.h"
+#include "sdkconfig.h"
+#include "esp_system.h"
+#include "driver/gpio.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "freertos/FreeRTOS.h"
+
+SemaphoreHandle_t UARTSemaphore;    // mutex for concurrent access of UART
 
 void* rooms[ROOM_NUM];          // Room pointers
 // Create 2 LivingRooms and 2 BedRooms
@@ -136,5 +132,8 @@ uint32_t controlTaskInit(void) {
         printf("Control Task NOT created..!\n\r");
         return 0;
     }
+
+    // Create semaphore
+    UARTSemaphore = xSemaphoreCreateMutex();
 }
 

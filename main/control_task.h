@@ -11,7 +11,8 @@
 #define SENSOR_NUM                8         // 4 rooms * 2 sensors each = 8 sensors
 #define CONTROL_TASK_STACK_SIZE   3072
 
-// Prototypes for the Control task.
+extern SemaphoreHandle_t UARTSemaphore;
+
 uint32_t controlTaskInit(void);
 
 #endif // CONTROL_TASK_H

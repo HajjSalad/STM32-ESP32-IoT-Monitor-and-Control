@@ -8,7 +8,6 @@
 // The priorities of the various tasks - Higher number = Higher priority
 
 #define PRIORITY_UART_TASK          1
-#define PRIORITY_CONTROL_TASK       2
-//#define PRIORITY_LOG_TASK            
+#define PRIORITY_CONTROL_TASK       2            
 
 #endif // PRIORITIES_H
