@@ -24,6 +24,46 @@ A complete IoT demonstration platform featuring:
 &nbsp;&nbsp;&nbsp;• AWS IoT Rules are used to store data in AWS Timestream for analytics.  
 
 ---
+### 🧪 STM32 Sensor Node 
+
+
+
+### 📂 STM32 Code Structure
+```
+├── 📁 STM32_Sensor_Node/                        # STM32 Sensor Node Firmware
+│   ├── 📁 Src/                                  # Source files
+│   │   ├── 📄 main.c                            # Main entry point, FreeRTOS scheduler
+│   │   ├── 📄 syscalls.c                        # System call stubs for HAL/RTOS
+│   │   ├── 📄 uart.c                            # UART driver implementation
+│   │   ├── 📁 core/                             # Core device classes
+│   │   │   ├── 📄 devices.cpp                   # Device management
+│   │   │   ├── 📄 rooms.cpp                     # Room abstraction classes
+│   │   │   ├── 📄 sensors.cpp                   # Sensor base classes
+│   │   │   └── 📄 wrapper.cpp                   # C-compatible interfaces
+│   │   └── 📁 tasks/                            # FreeRTOS tasks
+│   │       ├── 📄 task_controller.c             # Main control task
+│   │       ├── 📄 task_logger.c                 # Data logging task
+│   │       ├── 📄 task_sensor_read.c            # Sensor read task
+│   │       ├── 📄 task_sensor_write.c           # Sensor write task
+│   │       └── 📄 task_transmit.c               # Data transmission task
+│   │
+│   ├── 📁 Inc/                                   # Header files
+│   │   ├── 📁 CMSIS/                             # Cortex-M core headers
+│   │   ├── 📁 core/                              # Core class headers
+│   │   ├── 📁 tasks/                             # Task headers
+│   │   ├── 📄 shared_resources.h                 # Shared variables and defines
+│   │   └── 📄 uart.h                             # UART interface definitions
+│   │
+│   ├── 📁 FreeRTOS/                              # FreeRTOS kernel source and config
+│   ├── 📁 Build/                                 # Build output folder
+│   ├── 📁 Startup/                               # Startup code and vector table
+│   ├── 📄 Makefile                               # Build rules
+│   ├── 📄 STM32F446RETX_FLASH.ld                 # Flash linker script
+│   └── 📄 STM32F446RETX_RAM.ld                   # RAM linker script         
+│                      
+```
+
+---
 ### 📡 **Interrupt-Driven Handshake UART**
 Ensures reliable data transfer between STM32 (transmitter) and ESP32 (receiver):
 ```
@@ -135,38 +175,41 @@ if (temp > 25.0) {                           // Temp too hot
 |        GND            |      GND         |      GND                  |  
 ```
 ---
-### 📂 Project Code Structure
+### 📂 ESP32 Code Structure
 ```
-📁 IoT-Control-Monitor-System/
-├── 📁 stm32_sensor_node/                # STM32 Firmware (Sensor Data Simulation)
-│   ├── 📁 Core/
-│   │   ├── 📄 main.c                    # Application entry point
-│   │   ├── 📄 stm32f4xx_it.c            # Interrupt handlers
-│   │   ├── 📄 system_stm32f4xx.c        # System clock configuration
-│   │   └── 📁 Inc/                      # Header files
-│   ├── 📄 STM32F446RETX_FLASH.ld        # Flash memory linker script
-│   └── 📄 STM32_UART_ESP32.ioc          # CubeMX configuration file
-│
-├── 📁 esp32_cloud_gateway/              # ESP32 Gateway Firmware
-│   ├── 📁 main/
-│   │   ├── 📄 main.c                    # FreeRTOS tasks
-│   │   ├── 📄 uart.[c/h]                # UART driver (STM32 communication)
-│   │   ├── 📄 wifi.[c/h]                # WiFi connection manager
-│   │   └── 📄 cloud.[c/h]               # AWS IoT Core MQTT interface
+├── 📁 ESP32_Cloud_Gateway/                 # ESP32 Gateway Firmware
+│   ├── 📁 main/                            # Core FreeRTOS tasks and entry point
+│   │   ├── 📄 main.c                       # Main program, FreeRTOS scheduler and tasks
+│   │   ├── 📄 CMakeLists.txt               # Build configuration for main folder
+│   │   └── 📁 include/                     # Public headers for main tasks
+│   │       └── 📄 task_priorities.h        # Task priority definitions
 │   │
-│   ├── 📁 components/                   # OOP Device Management
-│   │   ├── 📄 rooms.[cpp/h]             # Room base class
-│   │   ├── 📄 sensors.[cpp/h]           # Sensor base class
-│   │   ├── 📄 devices.[cpp/h]           # Device management
-│   │   └── 📄 wrapper.[cpp/h]           # C-compatible interfaces
+│   ├── 📁 components/                      # Modular firmware components
+│   │   ├── 📁 mqtt/                        # MQTT communication module
+│   │   │   ├── 📄 CMakeLists.txt           # Build configuration for MQTT component
+│   │   │   ├── 📄 cloud_mqtt_task.c        # FreeRTOS task for MQTT communication
+│   │   │   ├── 📄 mqtt_driver.c            # Core MQTT driver implementation
+│   │   │   ├── 📁 include/                 # MQTT public headers
+│   │   │   │   └── 📄 mqtt.h               # MQTT interface definitions
+│   │   │   └── 📁 certs/                   # Certificates for AWS IoT Core
+│   │   │
+│   │   ├── 📁 uart/                        # UART communication module
+│   │   │   ├── 📄 CMakeLists.txt           # Build configuration for UART component
+│   │   │   ├── 📄 uart2_driver.c           # UART driver for hardware communication
+│   │   │   ├── 📄 uart_rxtx_task.c         # FreeRTOS task for UART RX/TX
+│   │   │   └── 📁 include/                 # UART public headers
+│   │   │       └── 📄 uart.h               # UART interface definitions
+│   │   │
+│   │   └── 📁 wifi/                        # WiFi connectivity module
+│   │       ├── 📄 CMakeLists.txt           # Build configuration for WiFi component
+│   │       ├── 📄 wifi_driver.c            # Core WiFi driver implementation
+│   │       ├── 📄 wifi_manager_task.c      # FreeRTOS task for WiFi management
+│   │       └── 📁 include/                 # WiFi public headers
+│   │           └── 📄 wifi.h               # WiFi interface definitions
 │   │
-│   ├── 📁 iot-aws-terraform/            # Infrastructure as Code
-│   |   ├── 📄 main.tf                   # AWS resource definitions
-│   ├── └── 📄 outputs.tf                # Cloud deployment outputs
-|   |
-│   └── 📄 CMakeLists.txt                # Build system configuration
+│   └── 📄 CMakeLists.txt                   # Top-level build system configuration
 │
-└── 📄 README.md                         # Project documentation
+└── 📄 README.md                            # Project documentation
 ```
 
 ### Diagram
