@@ -10,21 +10,23 @@ A complete IoT demonstration platform featuring:
 - **Infrastructure-as-Code** provisioning with Terraform
 
 ---
-### 🔑 Key Features:
-🧪 **Sensor Simulation** [Link](https://github.com/HajjSalad/STM32-Sensor-Data-Simulation)   
-&nbsp;&nbsp;&nbsp;• Simulated sensor readings using STM32 HAL, including ADC, PWM, and Timers.  
-🔁 **Reliable Data Transfer**  
-&nbsp;&nbsp;&nbsp;• Data transmission from STM32 to ESP32 via UART with a handshake mechanism.   
-⏱️ **Real-Time Scheduling on ESP32**  
-&nbsp;&nbsp;&nbsp;• Leveraging FreeRTOS for efficient real-time task scheduling and management.  
-🧩 **Modular OOP Architecture**  
-&nbsp;&nbsp;&nbsp;• Applied OOP principles to design a hierarchical class structure for sensor and device management.  
-☁️ **Cloud Integration**    
-&nbsp;&nbsp;&nbsp;• Data is transmitted to AWS IoT Core for real-time monitoring  
-&nbsp;&nbsp;&nbsp;• AWS IoT Rules are used to store data in AWS Timestream for analytics.  
-
----
 ### 🧪 STM32 Sensor Node 
+The FreeRTOS-based Sensor Node is  structured around a C++ object model wrapped in a C interface. It monitors temperature and motion, drives climate and lighting control, and forwards sensor data and device state to an ESP32 over UART.
+
+#### 🧱 Object Model
+**Class Hierarchy & Composition**     
+Sensors and devices are grouped into typed inheritance hierarchies, composed together inside a `Room`:
+```
+Sensor (abstract)           Device (abstract)           Room
+├── MotionDetector          ├── Light                   ├── MotionDetector    (1)
+└── TemperatureSensor       ├── AC                      ├── TemperatureSensor (1)
+                            └── Heater                  ├── Light             (1)
+                                                        ├── AC                (1)
+                                                        └── Heater            (1)
+```
+`Room` is a concrete aggregate that owns one instance of every sensor and device type and exposes a unified control interface.    
+New sensor or device types can be added by extending the base classes, and new room types by deriving from `Room` — without modifying existing code.
+
 
 #### 🧵 Task Model
 | Task | Priority | Responsibility |
@@ -55,20 +57,7 @@ A complete IoT demonstration platform featuring:
                     └────────────┘     └────────────┘     └──────────┘
 
 All tasks ──▶ LogQueue ──▶ Logger ──▶ Terminal
-```
-
-#### 🧱 Object Model
-**Class Hierarchy & Composition**     
-Sensors and devices are grouped into typed inheritance hierarchies, composed together inside a `Room`:
-```
-Sensor (abstract)           Device (abstract)           Room
-├── MotionDetector          ├── Light                   ├── MotionDetector    (1)
-└── TemperatureSensor       ├── AC                      ├── TemperatureSensor (1)
-                            └── Heater                  ├── Light             (1)
-                                                        ├── AC                (1)
-                                                        └── Heater            (1)
-```
-`Room` is a concrete aggregate that owns one instance of every sensor and device type and exposes a unified control interface.  
+``` 
 
 ---
 ### 📡 **Interrupt-Driven Handshake UART**
@@ -88,84 +77,53 @@ Reliable bidirectional communication between STM32 and ESP32 using a simple requ
 Ensures data integrity and coordinated transfers between devices.
 
 ---
-
-
-
 #### ☁️ ESP32 Cloud Gateway
+The ESP32 acts as a cloud gateway - receiving sensor data from the STM32 over UART, managing Wi-Fi connectivity, and publishing to AWS IoT Core over MQTT.
 
+#### 🧵 Task Model
+| Task | Responsibility |
+|---|---|
+| `uart_rxtx_task` | Receives sensor data from STM32 over UART2, handles ACK/READY protocol |
+| `wifi_manager_task` | Initializes Wi-Fi, connects to AP, monitors and reconnects on dropout |
+| `cloud_mqtt_task` | Connects to AWS IoT Core, drains `sensor_queue`, publishes JSON payloads |
 
+#### 🔗 FreeRTOS Resources
+| Resource | Type | Purpose |
+|---|---|---|
+| `uart_2_queue` | Queue | UART driver event queue — triggers `uart_rxtx_task` on incoming data |
+| `sensor_queue` | Queue | Passes `sensor_data_t` from `uart_rxtx_task` → `cloud_mqtt_task` |
+| `wifi_event_group` | Event Group | Signals Wi-Fi connection status via `WIFI_CONNECTED_BIT` |
+| `mqtt_event_group` | Event Group | Signals MQTT connection status via `MQTT_CONNECTED_BIT` |
 
-
-###  Modular, Scalable Sensor & Device Architecture
-🏠 `Room` (Base Class)  
-&nbsp;&nbsp;&nbsp;• Abstract representation of a room within the system.  
-&nbsp;&nbsp;&nbsp;• Specialized subclasses: LivingRoom, BedRoom.  
-🌡️ `Sensor` (Base Class)  
-&nbsp;&nbsp;&nbsp;• Generic interface for all sensor types.  
-&nbsp;&nbsp;&nbsp;• Specialized subclasses: TempSensor, MotionDetector.  
-🔌 `Device` (Base Class)  
-&nbsp;&nbsp;&nbsp;• Common interface for all controllable devices.  
-&nbsp;&nbsp;&nbsp;• Specialized subclasses: Light, AC, Heater.
-
-#### 🧩 **Room Configuration**  
-🪟 A `Room` can either be a `BedRoom` or a `LivingRoom`  
-🚪 Each `LivingRoom` or `BedRoom` contains:  
-&nbsp;&nbsp;&nbsp;• 1 `TempSensor`, 1 `MotionDetector`  
-&nbsp;&nbsp;&nbsp;• 1 `Light`, 1 `AC`, 1 `Heater`  
-
-💡 **Room Creation and Sensor Usage Example**  
-```c
-// Create a LivingRoom instance with a specific room number
-int roomNum = 101;
-void* room1 = createLivingRoom(roomNum);
-
-if (!room1) {            // Check if room creation successful
-    printf("LivingRoom creation failed.\n");
-    return;
-} else {
-    printf("LivingRoom %d created.\n\r", roomNum);
-}
-
-// Sensor values (example data)
-float tempValue = 27.5;
-int motionValue = 1;  // 1 = motion detected, 0 = no motion
-
-// Set sensor values
-setTempSensorValue(room1, tempValue);
-setMotionDetectorValue(room1, motionValue);
+#### 🔀 Data Flow
 ```
-⏲️ **Device Control Based on Sensor Data**
-```c
-if (getMotionDetectorValue(room1)) {         // Turn on light if motion is detected
-    turnOnLight(room1);
-    printf("Light turned ON in Room %d\n\r", roomNum);
-}
+┌──────────┐     ┌───────────────┐     ┌──────────────┐     ┌───────────┐
+│  STM32   │────▶│ uart_rxtx     │────▶│ cloud_mqtt   │────▶│ AWS IoT   │
+│  (UART2) │     │ _task         │     │ _task        │     │ Core      │
+└──────────┘     └───────────────┘     └──────────────┘     └───────────┘
+```
 
-float temp = getTempSensorValue(room1);      // Read current temperature
-
-// Control AC and Heater based on temperature range
-if (temp > 25.0) {                           // Temp too hot
-    turnOnAC(room1);
-    turnOffHeater(room1);
-    printf("AC turned ON in Room %d\n\r", roomNum);
-
-} else if (temp < 20.0) {                    // Temp too cold
-    turnOffAC(room1);
-    turnOnHeater(room1);
-    printf("Heater turned ON in Room %d\n\r", roomNum);
-
-} else {                // Temperature is in comfortable range (20–25°C)
-    turnOffAC(room1);
-    turnOffHeater(room1);
-    printf("Heater and AC turned OFF in Room %d\n\r", roomNum);
-}
+#### 📡 Wi-Fi & MQTT Connection Lifecycle
+```
+wifi_init()  ──▶  wifi_start()  ──▶  WIFI_EVENT_STA_CONNECTED
+                                               │
+                                               ▼
+                                      IP_EVENT_STA_GOT_IP
+                                               │
+                                               ▼
+                                     WIFI_CONNECTED_BIT set
+                                               │
+                                               ▼
+                                         mqtt_init()  ──▶  TLS Handshake  ──▶  AWS IoT Core
+                                               │
+                                               ▼
+                                     MQTT_CONNECTED_BIT set
+                                               │
+                                               ▼
+                                        publish loop
 ```
 
 ---
-### 🏗 System Architecture
-```
-[STM32 (Simulate data)] → [UART] → [ESP32 (FreeRTOS & Cloud Gateway)] → [MQTT] → [Cloud Dashboard]
-```
 
 ### 🛠️ Development Tools & Software
 𐂷 **Microcontroller Development**  
