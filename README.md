@@ -26,25 +26,29 @@ A complete IoT demonstration platform featuring:
 ---
 ### 🧪 STM32 Sensor Node 
 
+#### Task Model
+```
+|       Task      | Priority |     Responsibility             |  
+|  `SensorWrite`  |     5    |   Simulates sensor readings via `rand()`, writes to `Room` via C wrapper     |  
+|  `SensorRead`   |     4    |  Reads sensor values from `Room`, packages into `SensorData_t`, sends to `SensorQueue`      |  
+|  `Controller`   |     3    |  Receives `SensorData_t`, makes device control decisions, forwards to stream buffer      |  
+|   `Transmit`    |     2    |  Reads `TransmitData_t` from stream buffer, forwards to ESP32 via UART1      |  
+|    `Logger`     |     1    |  Sole writer to UART2 — drains `LogQueue` and prints all log messages      |  
+```
 
 #### 🧱 Object Model
-**OOP Class Hierarchy & Composition**     
+**Class Hierarchy & Composition**     
 Sensors and devices are grouped into typed inheritance hierarchies, composed together inside a `Room`:
 ```
-Sensor (abstract)               Device (abstract)
-├── MotionDetector              ├── Light                   
-└── TemperatureSensor           ├── AC                          
-                                └── Heater
-Room
-├── MotionDetector    (1)
-├── TemperatureSensor (1)
-├── Light             (1)
-├── AC                (1)
-└── Heater            (1)
+Sensor (abstract)           Device (abstract)           Room
+├── MotionDetector          ├── Light                   ├── MotionDetector    (1)
+└── TemperatureSensor       ├── AC                      ├── TemperatureSensor (1)
+                            └── Heater                  ├── Light             (1)
+                                                        ├── AC                (1)
+                                                        └── Heater            (1)
 ```
 `Room` is a concrete aggregate that owns one instance of every sensor and device type and exposes a unified control interface.  
 
-- 
 ---
 ### 📡 **Interrupt-Driven Handshake UART**
 Reliable bidirectional communication between STM32 and ESP32 using a simple request-response protocol:
