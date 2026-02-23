@@ -1,10 +1,12 @@
-## 🌐 IoT Monitor and Control with STM32 & ESP32
+## 🌐 IoT Monitor and Control
 
 An embedded IoT system that monitors temperature and motion in a room, drives climate and lighting control, and publishes sensor data to AWS IoT Core. An STM32 runs the sensor and control logic via FreeRTOS, forwarding data to an ESP32 which manages Wi-Fi connectivity and cloud publishing over MQTT.
 
 The system is split into two components:
 - **🧪 STM32 Sensor Node** - sensor reads, device control, and UART forwarding
-- **☁️ ESP32 Cloud Gateway** - Wi-Fi management and AWS IoT Core publishing
+- **☁️ ESP32 Cloud Gateway** - Wi-Fi management and AWS IoT Core publishing       
+
+📓 Design notes, dev journal, and setup guides (STM32 & ESP32 project creation, design decisions) are documented in the [Project Notion Page](https://hajjsalad.notion.site/iot-monitor-control)
 
 ---
 ### 🧪 STM32 Sensor Node 
@@ -73,7 +75,7 @@ Reliable bidirectional communication between STM32 and ESP32 using a simple requ
 Ensures data integrity and coordinated transfers between devices.
 
 ---
-#### ☁️ ESP32 Cloud Gateway
+### ☁️ ESP32 Cloud Gateway
 The ESP32 acts as a cloud gateway - receiving sensor data from the STM32 over UART, managing Wi-Fi connectivity, and publishing to AWS IoT Core over MQTT.
 
 #### 🧵 Task Model
