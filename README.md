@@ -27,9 +27,23 @@ A complete IoT demonstration platform featuring:
 ### 🧪 STM32 Sensor Node 
 
 
-
-
-
+#### 🧱 Modular Object Model
+**Class Hierachy**
+Three parallel inheritance trees make up the core object model:
+```
+Sensor (abstract)               Device (abstract)
+├── MotionDetector              ├── Light                   
+└── TemperatureSensor           ├── AC                          
+                                └── Heater
+Room
+├── MotionDetector    (1)
+├── TemperatureSensor (1)
+├── Light             (1)
+├── AC                (1)
+└── Heater            (1)
+```
+`Room` is a concrete aggregate that owns one instance of every sensor and device type and exposes a unified control interface.  
+- 
 ---
 ### 📡 **Interrupt-Driven Handshake UART**
 Reliable bidirectional communication between STM32 and ESP32 using a simple request-response protocol:
@@ -56,7 +70,7 @@ Ensures data integrity and coordinated transfers between devices.
 
 
 
-### 🧱 Modular, Scalable Sensor & Device Architecture
+###  Modular, Scalable Sensor & Device Architecture
 🏠 `Room` (Base Class)  
 &nbsp;&nbsp;&nbsp;• Abstract representation of a room within the system.  
 &nbsp;&nbsp;&nbsp;• Specialized subclasses: LivingRoom, BedRoom.  
