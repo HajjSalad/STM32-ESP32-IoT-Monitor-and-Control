@@ -1,0 +1,19 @@
+# Ignore object files and binaries
+*.o
+*.out
+*.exe
+
+# Ignore build directories
+/build/
+/dist/
+
+# Ignore logs
+*.log
+
+# Ignore editor-specific files
+*.swp
+.vscode/
+.idea/
+.DS_Store
+.terraform/
+*.tfstate
