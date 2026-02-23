@@ -1,4 +1,4 @@
-## IoT System with STM32 and ESP32
+## IoT Monitor and Control with STM32 & ESP32
 
 A scalable IoT solution combining STM32 for sensor simulation and ESP32 for cloud connectivity, built with FreeRTOS and AWS IoT Core.
 
@@ -174,4 +174,4 @@ if (temp > 25.0) {                           // Temp too hot
 
 #### Demo
 &nbsp;&nbsp;&nbsp;AWS IoT Core&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;Serial Terminal
-![Demo](./IoTSystemGIF.gif)
+![Demo](./png_demo.gif)
