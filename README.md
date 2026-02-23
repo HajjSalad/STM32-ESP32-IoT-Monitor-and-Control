@@ -1,13 +1,10 @@
-## IoT Monitor and Control with STM32 & ESP32
+## 🌐 IoT Monitor and Control with STM32 & ESP32
 
-A scalable IoT solution combining STM32 for sensor simulation and ESP32 for cloud connectivity, built with FreeRTOS and AWS IoT Core.
+An embedded IoT system that monitors temperature and motion in a room, drives climate and lighting control, and publishes sensor data to AWS IoT Core. An STM32 runs the sensor and control logic via FreeRTOS, forwarding data to an ESP32 which manages Wi-Fi connectivity and cloud publishing over MQTT.
 
-## 🚀 Project Overview
-A complete IoT demonstration platform featuring:
-- **STM32** as sensor data generator (simulating digital sensors via HAL)
-- **ESP32** as edge gateway with FreeRTOS real-time scheduling
-- **AWS IoT Core** for secure cloud connectivity
-- **Infrastructure-as-Code** provisioning with Terraform
+The system is split into two components:
+- **🧪 STM32 Sensor Node** - sensor reads, device control, and UART forwarding
+- **☁️ ESP32 Cloud Gateway** - Wi-Fi management and AWS IoT Core publishing
 
 ---
 ### 🧪 STM32 Sensor Node 
@@ -25,8 +22,7 @@ Sensor (abstract)           Device (abstract)           Room
                                                         └── Heater            (1)
 ```
 `Room` is a concrete aggregate that owns one instance of every sensor and device type and exposes a unified control interface.    
-New sensor or device types can be added by extending the base classes, and new room types by deriving from `Room` — without modifying existing code.
-
+New sensor or device types can be added by extending the base classes, and new room types by deriving from `Room` — without modifying existing code.   
 
 #### 🧵 Task Model
 | Task | Priority | Responsibility |
@@ -90,17 +86,16 @@ The ESP32 acts as a cloud gateway - receiving sensor data from the STM32 over UA
 #### 🔗 FreeRTOS Resources
 | Resource | Type | Purpose |
 |---|---|---|
-| `uart_2_queue` | Queue | UART driver event queue — triggers `uart_rxtx_task` on incoming data |
+| `uart2_queue` | Queue | UART driver event queue: triggers `uart_rxtx_task` on incoming data |
 | `sensor_queue` | Queue | Passes `sensor_data_t` from `uart_rxtx_task` → `cloud_mqtt_task` |
-| `wifi_event_group` | Event Group | Signals Wi-Fi connection status via `WIFI_CONNECTED_BIT` |
-| `mqtt_event_group` | Event Group | Signals MQTT connection status via `MQTT_CONNECTED_BIT` |
+| `wifi_event_group` | Event Group | Signals Wi-Fi connection status `WIFI_CONNECTED_BIT` |
+| `mqtt_event_group` | Event Group | Signals MQTT connection status `MQTT_CONNECTED_BIT` |
 
 #### 🔀 Data Flow
 ```
-┌──────────┐     ┌───────────────┐     ┌──────────────┐     ┌───────────┐
-│  STM32   │────▶│ uart_rxtx     │────▶│ cloud_mqtt   │────▶│ AWS IoT   │
-│  (UART2) │     │ _task         │     │ _task        │     │ Core      │
-└──────────┘     └───────────────┘     └──────────────┘     └───────────┘
+┌──────────────┐     ┌───────────────┐     ┌─────────────────┐     ┌──────────────┐
+│ STM32 (UART2)│────▶│ uart_rxtx_task│────▶│ cloud_mqtt_task │────▶│ AWS IoT Core │
+└──────────────┘     └───────────────┘     └─────────────────┘     └──────────────┘
 ```
 
 #### 📡 Wi-Fi & MQTT Connection Lifecycle
@@ -124,23 +119,6 @@ wifi_init()  ──▶  wifi_start()  ──▶  WIFI_EVENT_STA_CONNECTED
 ```
 
 ---
-
-### 🛠️ Development Tools & Software
-𐂷 **Microcontroller Development**  
-&nbsp;&nbsp;&nbsp;⎔ **STM32 Development**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• STM32CubeIDE – Integrated development environment for STM32 firmware   
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• ST-Link Debugger – Enables flashing and debugging over SWD      
-&nbsp;&nbsp;&nbsp;⎔ **ESP32 Development**:  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• ESP-IDF - Official development framework for ESP32 firmware  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• VS Code - Development environment with ESP-IDF integration and UART debugging    
-🌐 **Cloud Infrastructure**    
-&nbsp;&nbsp;&nbsp;⎔ **AWS IoT Core** - Secure MQTT messaging and device connectivity     
-&nbsp;&nbsp;&nbsp;⎔ **AWS Timestream** - Time-series database for storing and analyzing sensor data     
-&nbsp;&nbsp;&nbsp;⎔ **Terraform** - Automates the provisioning and configuration of AWS infrastructure     
-⚙️ **Hardware**  
-&nbsp;&nbsp;&nbsp;⎔ **STM32 MCU** - Microcontroller used for real-time sensor data acquisition and local processing     
-&nbsp;&nbsp;&nbsp;⎔ **ESP32 MCU** - Acts as the cloud gateway, handling connectivity and communication with AWS   
-
 #### ⚙️ Hardware Connection
 ```
 |       STM32 PIN       |    Interface     |     ESP32 Pin             |  
@@ -149,7 +127,6 @@ wifi_init()  ──▶  wifi_start()  ──▶  WIFI_EVENT_STA_CONNECTED
 |        GND            |      GND         |           GND             |  
 ```
 
----
 #### 📂 STM32 Code Structure
 ```
 ├── 📁 STM32_Sensor_Node/                        # STM32 Sensor Node Firmware
