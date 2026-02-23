@@ -28,40 +28,7 @@ A complete IoT demonstration platform featuring:
 
 
 
-#### 📂 STM32 Code Structure
-```
-├── 📁 STM32_Sensor_Node/                        # STM32 Sensor Node Firmware
-│   ├── 📁 Src/                                  # Source files
-│   │   ├── 📄 main.c                            # Main entry point, FreeRTOS scheduler
-│   │   ├── 📄 syscalls.c                        # System call stubs for HAL/RTOS
-│   │   ├── 📄 uart.c                            # UART driver implementation
-│   │   ├── 📁 core/                             # Core device classes
-│   │   │   ├── 📄 devices.cpp                   # Device management
-│   │   │   ├── 📄 rooms.cpp                     # Room abstraction classes
-│   │   │   ├── 📄 sensors.cpp                   # Sensor base classes
-│   │   │   └── 📄 wrapper.cpp                   # C-compatible interfaces
-│   │   └── 📁 tasks/                            # FreeRTOS tasks
-│   │       ├── 📄 task_controller.c             # Main control task
-│   │       ├── 📄 task_logger.c                 # Data logging task
-│   │       ├── 📄 task_sensor_read.c            # Sensor read task
-│   │       ├── 📄 task_sensor_write.c           # Sensor write task
-│   │       └── 📄 task_transmit.c               # Data transmission task
-│   │
-│   ├── 📁 Inc/                                   # Header files
-│   │   ├── 📁 CMSIS/                             # Cortex-M core headers
-│   │   ├── 📁 core/                              # Core class headers
-│   │   ├── 📁 tasks/                             # Task headers
-│   │   ├── 📄 shared_resources.h                 # Shared variables and defines
-│   │   └── 📄 uart.h                             # UART interface definitions
-│   │
-│   ├── 📁 FreeRTOS/                              # FreeRTOS kernel source and config
-│   ├── 📁 Build/                                 # Build output folder
-│   ├── 📁 Startup/                               # Startup code and vector table
-│   ├── 📄 Makefile                               # Build rules
-│   ├── 📄 STM32F446RETX_FLASH.ld                 # Flash linker script
-│   └── 📄 STM32F446RETX_RAM.ld                   # RAM linker script         
-│                      
-```
+
 
 ---
 ### 📡 **Interrupt-Driven Handshake UART**
@@ -88,41 +55,7 @@ Ensures data integrity and coordinated transfers between devices.
 
 
 
-#### 📂 STM32 Code Structure
-```#### 📂 ESP32 Code Structure
-```
-├── 📁 ESP32_Cloud_Gateway/                 # ESP32 Gateway Firmware
-│   ├── 📁 main/                            # Core FreeRTOS tasks and entry point
-│   │   ├── 📄 main.c                       # Main program, FreeRTOS scheduler and tasks
-│   │   ├── 📄 CMakeLists.txt               # Build configuration for main folder
-│   │   └── 📁 include/                     # Public headers for main tasks
-│   │       └── 📄 task_priorities.h        # Task priority definitions
-│   │
-│   ├── 📁 components/                      # Modular firmware components
-│   │   ├── 📁 mqtt/                        # MQTT communication module
-│   │   │   ├── 📄 CMakeLists.txt           # Build configuration for MQTT component
-│   │   │   ├── 📄 cloud_mqtt_task.c        # FreeRTOS task for MQTT communication
-│   │   │   ├── 📄 mqtt_driver.c            # Core MQTT driver implementation
-│   │   │   ├── 📁 include/                 # MQTT public headers
-│   │   │   │   └── 📄 mqtt.h               # MQTT interface definitions
-│   │   │   └── 📁 certs/                   # Certificates for AWS IoT Core
-│   │   │
-│   │   ├── 📁 uart/                        # UART communication module
-│   │   │   ├── 📄 CMakeLists.txt           # Build configuration for UART component
-│   │   │   ├── 📄 uart2_driver.c           # UART driver for hardware communication
-│   │   │   ├── 📄 uart_rxtx_task.c         # FreeRTOS task for UART RX/TX
-│   │   │   └── 📁 include/                 # UART public headers
-│   │   │       └── 📄 uart.h               # UART interface definitions
-│   │   │
-│   │   └── 📁 wifi/                        # WiFi connectivity module
-│   │       ├── 📄 CMakeLists.txt           # Build configuration for WiFi component
-│   │       ├── 📄 wifi_driver.c            # Core WiFi driver implementation
-│   │       ├── 📄 wifi_manager_task.c      # FreeRTOS task for WiFi management
-│   │       └── 📁 include/                 # WiFi public headers
-│   │           └── 📄 wifi.h               # WiFi interface definitions
-│   │
-│   └── 📄 CMakeLists.txt                   # Top-level build system configuration
-```
+
 ### 🧱 Modular, Scalable Sensor & Device Architecture
 🏠 `Room` (Base Class)  
 &nbsp;&nbsp;&nbsp;• Abstract representation of a room within the system.  
@@ -217,7 +150,76 @@ if (temp > 25.0) {                           // Temp too hot
 |    PA10 - USART1_RX   |      UART        |     GPIO17 - UART2_TX     |  
 |        GND            |      GND         |           GND             |  
 ```
+
 ---
+#### 📂 STM32 Code Structure
+```
+├── 📁 STM32_Sensor_Node/                        # STM32 Sensor Node Firmware
+│   ├── 📁 Src/                                  # Source files
+│   │   ├── 📄 main.c                            # Main entry point, FreeRTOS scheduler
+│   │   ├── 📄 syscalls.c                        # System call stubs for HAL/RTOS
+│   │   ├── 📄 uart.c                            # UART driver implementation
+│   │   ├── 📁 core/                             # Core device classes
+│   │   │   ├── 📄 devices.cpp                   # Device management
+│   │   │   ├── 📄 rooms.cpp                     # Room abstraction classes
+│   │   │   ├── 📄 sensors.cpp                   # Sensor base classes
+│   │   │   └── 📄 wrapper.cpp                   # C-compatible interfaces
+│   │   └── 📁 tasks/                            # FreeRTOS tasks
+│   │       ├── 📄 task_controller.c             # Main control task
+│   │       ├── 📄 task_logger.c                 # Data logging task
+│   │       ├── 📄 task_sensor_read.c            # Sensor read task
+│   │       ├── 📄 task_sensor_write.c           # Sensor write task
+│   │       └── 📄 task_transmit.c               # Data transmission task
+│   │
+│   ├── 📁 Inc/                                   # Header files
+│   │   ├── 📁 CMSIS/                             # Cortex-M core headers
+│   │   ├── 📁 core/                              # Core class headers
+│   │   ├── 📁 tasks/                             # Task headers
+│   │   ├── 📄 shared_resources.h                 # Shared variables and defines
+│   │   └── 📄 uart.h                             # UART interface definitions
+│   │
+│   ├── 📁 FreeRTOS/                              # FreeRTOS kernel source and config
+│   ├── 📁 Build/                                 # Build output folder
+│   ├── 📁 Startup/                               # Startup code and vector table
+│   ├── 📄 Makefile                               # Build rules
+│   ├── 📄 STM32F446RETX_FLASH.ld                 # Flash linker script
+│   └── 📄 STM32F446RETX_RAM.ld                   # RAM linker script         
+│                      
+```
+#### 📂 STM32 Code Structure
+```
+├── 📁 ESP32_Cloud_Gateway/                 # ESP32 Gateway Firmware
+│   ├── 📁 main/                            # Core FreeRTOS tasks and entry point
+│   │   ├── 📄 main.c                       # Main program, FreeRTOS scheduler and tasks
+│   │   ├── 📄 CMakeLists.txt               # Build configuration for main folder
+│   │   └── 📁 include/                     # Public headers for main tasks
+│   │       └── 📄 task_priorities.h        # Task priority definitions
+│   │
+│   ├── 📁 components/                      # Modular firmware components
+│   │   ├── 📁 mqtt/                        # MQTT communication module
+│   │   │   ├── 📄 CMakeLists.txt           # Build configuration for MQTT component
+│   │   │   ├── 📄 cloud_mqtt_task.c        # FreeRTOS task for MQTT communication
+│   │   │   ├── 📄 mqtt_driver.c            # Core MQTT driver implementation
+│   │   │   ├── 📁 include/                 # MQTT public headers
+│   │   │   │   └── 📄 mqtt.h               # MQTT interface definitions
+│   │   │   └── 📁 certs/                   # Certificates for AWS IoT Core
+│   │   │
+│   │   ├── 📁 uart/                        # UART communication module
+│   │   │   ├── 📄 CMakeLists.txt           # Build configuration for UART component
+│   │   │   ├── 📄 uart2_driver.c           # UART driver for hardware communication
+│   │   │   ├── 📄 uart_rxtx_task.c         # FreeRTOS task for UART RX/TX
+│   │   │   └── 📁 include/                 # UART public headers
+│   │   │       └── 📄 uart.h               # UART interface definitions
+│   │   │
+│   │   └── 📁 wifi/                        # WiFi connectivity module
+│   │       ├── 📄 CMakeLists.txt           # Build configuration for WiFi component
+│   │       ├── 📄 wifi_driver.c            # Core WiFi driver implementation
+│   │       ├── 📄 wifi_manager_task.c      # FreeRTOS task for WiFi management
+│   │       └── 📁 include/                 # WiFi public headers
+│   │           └── 📄 wifi.h               # WiFi interface definitions
+│   │
+│   └── 📄 CMakeLists.txt                   # Top-level build system configuration
+```
 
 #### Demo
 &nbsp;&nbsp;&nbsp;AWS IoT Core&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;Serial Terminal
