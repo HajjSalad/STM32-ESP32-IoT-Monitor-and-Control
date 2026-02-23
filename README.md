@@ -27,9 +27,9 @@ A complete IoT demonstration platform featuring:
 ### 🧪 STM32 Sensor Node 
 
 
-#### 🧱 Modular Object Model
-**Class Hierachy**
-Three parallel inheritance trees make up the core object model:
+#### 🧱 Object Model
+**OOP Class Hierarchy & Composition**     
+Sensors and devices are grouped into typed inheritance hierarchies, composed together inside a `Room`:
 ```
 Sensor (abstract)               Device (abstract)
 ├── MotionDetector              ├── Light                   
@@ -43,6 +43,7 @@ Room
 └── Heater            (1)
 ```
 `Room` is a concrete aggregate that owns one instance of every sensor and device type and exposes a unified control interface.  
+
 - 
 ---
 ### 📡 **Interrupt-Driven Handshake UART**
