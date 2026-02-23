@@ -1,5 +1,0 @@
-{
-    "idf.port": "/dev/tty.usbserial-0001",
-    "idf.flashType": "UART",
-    "idf.currentSetup": "/Users/abdirahmanhajj/esp/v5.4/esp-idf"
-}
