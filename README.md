@@ -27,14 +27,13 @@ A complete IoT demonstration platform featuring:
 ### 🧪 STM32 Sensor Node 
 
 #### Task Model
-```
 |       Task      | Priority |     Responsibility             |  
 |  `SensorWrite`  |     5    |   Simulates sensor readings via `rand()`, writes to `Room` via C wrapper     |  
 |  `SensorRead`   |     4    |  Reads sensor values from `Room`, packages into `SensorData_t`, sends to `SensorQueue`      |  
 |  `Controller`   |     3    |  Receives `SensorData_t`, makes device control decisions, forwards to stream buffer      |  
 |   `Transmit`    |     2    |  Reads `TransmitData_t` from stream buffer, forwards to ESP32 via UART1      |  
 |    `Logger`     |     1    |  Sole writer to UART2 — drains `LogQueue` and prints all log messages      |  
-```
+
 
 #### 🧱 Object Model
 **Class Hierarchy & Composition**     
