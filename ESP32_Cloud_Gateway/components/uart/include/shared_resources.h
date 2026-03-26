@@ -1,18 +1,14 @@
-#ifndef SHARED_RESOURCES_H
-#define SHARED_RESOURCES_H
+#ifndef SHARED_RESOURCES_H_
+#define SHARED_RESOURCES_H_
 
 /**
  * @file  shared_resources.h
- * @brief Shared constants, macros, and type definitions used across all modules.
+ * @brief Shared constants, macros, and type definitions used across all UART transport layer modules.
 */
 
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "semphr.h"
-#include <stdio.h>
-
-/** @brief Format for printf */
-#define LOG(fmt, ...)  printf( (fmt "\n\r"), ##__VA_ARGS__)
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include <stdint.h>
 
 /* --- Protocol constants — must match on both STM32 and ESP32 --- */
 #define SOF_BYTE             0xAAU       // Start of frame — marks beginning of every packet
@@ -31,38 +27,50 @@
 #define LEN_POS              5U          // Payload length (data packets only)
 #define PAYLOAD_POS          6U          // Payload start (data packets only)
 
-// Mutex to protect shared sensor object access between sensor_write and sensor_read
-extern SemaphoreHandle_t        xSensorMutex;
+/* Queues */
+extern QueueHandle_t tx_queue;
+extern QueueHandle_t rx_queue;
 
-// Logger queue — Task_read, Task_controller and Task_transmit post log messages to Task_logger
-#define LOG_MSG_MAX_LEN         (128U)
-#define LOG_QUEUE_DEPTH         (20U)
-extern QueueHandle_t            xLogQueue;
+/* --- TX Side  --- */
 
-// Sensor data queue — sensor_read posts sensor readings, controller consumes them
-#define SENSOR_QUEUE_DEPTH      (20U)
-extern QueueHandle_t            xSensorQueue;
-
-// Sensor data type identifier
+/** Commands sent from ESP32 gateway to STM32 sensor node */
 typedef enum {
-    TEMP_SENSOR_DATA   = 0x01,      // bit 0 — temperature field is valid
-    MOTION_SENSOR_DATA = 0x02,      // bit 1 — motion field is valid
-} SensorDataFlags_t;
+    CMD_OTA_START               = 0x01,   // Begin OTA firmware update
+    CMD_OTA_END                 = 0x02,   // All chunks sent, verify and reboot
+    CMD_SET_TEMP_THRESHOLD      = 0x03,   // Set temperature alert limit
+} CommandCode_t;
 
-// Sensor data packet
+/** Command packet payload  */
 typedef struct __attribute__((packed)) {
-    uint8_t   flags;            // bitmask — indicates which fields are valid
-    uint16_t  tempData;         // valid if flags & TEMP_SENSOR_DATA
-    uint8_t   motionData;       // valid if flags & MOTION_SENSOR_DATA
-} SensorData_t; 
+    uint8_t  code;                       // CommandCode_t - code identifies the command
+    uint16_t value;                      // optional ex. threshold value, 0 if unused
+} CommandData_t;
 
-// TX and RX Queues 
-#define TX_QUEUE_LENGTH         10
-#define RX_QUEUE_LENGTH         10
-extern QueueHandle_t            xTXQueue;
-extern QueueHandle_t            xRXQueue;
+/** Firmware binary is split into chunks and sent sequentially */
+#define MAX_FIRMWARE_CHUNK_SIZE      128U
 
-/* ---  TX Side  --- */
+typedef struct __attribute__((packed)) {
+    uint8_t  data[MAX_FIRMWARE_CHUNK_SIZE];  // Chunk of firmware binary
+    uint8_t  chunk_index;                    // Index of this chunk (0-based)
+    uint8_t  total_chunks;                   // Total number of chunks in this update
+} FirmwareData_t;
+
+/** Identifies what type of payload is in the TX queue item */
+typedef enum {
+    TX_PAYLOAD_COMMAND    = 0x01,
+    TX_PAYLOAD_FIRMWARE   = 0x02,
+} TX_PayloadType_t;
+
+/** Item placed on TX queue — union holds either a command or firmware chunk */
+typedef struct __attribute__((packed)) {
+    TX_PayloadType_t payloadType;
+    union {
+        CommandData_t  command;
+        FirmwareData_t firmware;
+    } payload;
+} TXQueue_Item_t;
+
+/* --- RX Side  --- */
 
 /** Temperature reading from STM32 sensor node — scaled by 100 (e.g. 2540 = 25.40°C) */
 typedef struct __attribute__((packed)) {
@@ -87,65 +95,26 @@ typedef struct __attribute__((packed)) {
     uint8_t code;    // MessageCode_t
 } MessageData_t;
 
-/** Identifies what type of payload is in the TX queue item */
+/** Identifies what type of payload is in the RX queue item */
 typedef enum {
-    TX_PAYLOAD_TEMP_DATA      = 0x01,
-    TX_PAYLOAD_MOTION_DATA    = 0x02,
-    TX_PAYLOAD_MESSAGE_DATA   = 0x03,
-} TX_PayloadType_t;
+    RX_PAYLOAD_TEMP_DATA      = 0x01,
+    RX_PAYLOAD_MOTION_DATA    = 0x02,
+    RX_PAYLOAD_MESSAGE_DATA   = 0x03,
+} RX_PayloadType_t;
 
-/** Item placed on TX queue — holds parsed packet data for the TX task */
+/** Item placed on RX queue by the router — holds parsed packet data for the RX task */
 typedef struct {
-    TX_PayloadType_t payloadType;       // Identifies active union member
+    uint8_t          seq;          // Sequence number from received packet
+    uint8_t          type;         // Packet type (UART_PacketType_t)
+    RX_PayloadType_t payloadType;  // Identifies active union member
     union {
         TempData_t    tempData;
         MotionData_t  motionData;
         MessageData_t messageData;
     } payload;
-} TXQueue_Item_t;
-
-/* ---  RX Side  --- */
-
-/** Commands sent from ESP32 gateway to STM32 sensor node */
-typedef enum {
-    CMD_OTA_START               = 0x01,   // Begin OTA firmware update
-    CMD_OTA_END                 = 0x02,   // All chunks sent, verify and reboot
-    CMD_SET_TEMP_THRESHOLD      = 0x03,   // Set temperature alert limit
-} CommandCode_t;
-
-/** Command packet payload  */
-typedef struct __attribute__((packed)) {
-    uint8_t  code;                       // CommandCode_t - code identifies the command
-    uint16_t value;                      // optional ex. threshold value, 0 if unused
-} CommandData_t;
-
-/** Firmware binary is split into chunks and sent sequentially */
-#define MAX_FIRMWARE_CHUNK_SIZE      128U
-
-typedef struct __attribute__((packed)) {
-    uint8_t  data[MAX_FIRMWARE_CHUNK_SIZE];  // Chunk of firmware binary
-    uint8_t  chunk_index;                    // Index of this chunk (0-based)
-    uint8_t  total_chunks;                   // Total number of chunks in this update
-} FirmwareData_t;
-
-/** Identifies what type of payload is in the RX queue item */
-typedef enum {
-    RX_PAYLOAD_COMMAND    = 0x01,
-    RX_PAYLOAD_FIRMWARE   = 0x02,
-} RX_PayloadType_t;
-
-/** Item placed on RX queue — union holds either a command or firmware chunk */
-typedef struct __attribute__((packed)) {
-    uint8_t seq;
-    uint8_t type;
-    RX_PayloadType_t payloadType;
-    union {
-        CommandData_t  command;
-        FirmwareData_t firmware;
-    } payload;
 } RXQueue_Item_t;
 
-/*  ---   Shared by TX and RX   --- */
+/* --- Shared by both RX and TX side --- */
 
 /** Identifies the type of each UART packet — both sides must agree on these values */
 typedef enum {
@@ -204,4 +173,4 @@ typedef struct __attribute__((packed)) {
     uint8_t  eof;                        // End of frame (0x55)
 } UART_Data_Packet_t;
 
-#endif // SHARED_RESOURCES_H
+#endif      // SHARED_RESOURCES_H_

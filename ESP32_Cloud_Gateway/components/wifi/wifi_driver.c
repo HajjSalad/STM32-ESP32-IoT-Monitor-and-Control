@@ -32,39 +32,39 @@ static EventGroupHandle_t wifi_event_group;
 /**
  * @brief Event handler for Wi-Fi and IP events
  * 
- * @param event_handler_arg Not used
+ * @param handler_arg       Not used
  * @param event_base        Event base (WIFI_EVENT/IP_EVENT)
  * @param event_id          Event ID
  * @param event_data        Event-specific data
 */
-static void wifi_event_handler(void *event_handler_arg, 
+static void wifi_event_handler(void *handler_arg, 
                                esp_event_base_t event_base, 
                                int32_t event_id, 
                                void *event_data)
 {
-    switch (event_id) {
+    switch (event_id) 
+    {
+        case WIFI_EVENT_STA_START:
+            ESP_LOGI(TAG, "WiFi starting...");
+            break;
 
-    case WIFI_EVENT_STA_START:
-        ESP_LOGI(TAG, "WiFi starting...");
-        break;
+        case WIFI_EVENT_STA_CONNECTED:
+            ESP_LOGI(TAG, "WiFi connected AP");
+            break;
 
-    case WIFI_EVENT_STA_CONNECTED:
-        ESP_LOGI(TAG, "WiFi connected AP");
-        break;
+        case WIFI_EVENT_STA_DISCONNECTED:
+            ESP_LOGI(TAG, "WiFi disconnected");
+            xEventGroupClearBits(wifi_event_group, WIFI_CONNECTED_BIT);
+            break;
 
-    case WIFI_EVENT_STA_DISCONNECTED:
-        ESP_LOGI(TAG, "WiFi disconnected");
-        xEventGroupClearBits(wifi_event_group, WIFI_CONNECTED_BIT);
-        break;
+        case IP_EVENT_STA_GOT_IP:
+            ESP_LOGI(TAG, "Got IP address");
+            xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
+            break;
 
-    case IP_EVENT_STA_GOT_IP:
-        ESP_LOGI(TAG, "Got IP address");
-        xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
-        break;
-
-    default:
-        break;
-    }
+        default:
+            break;
+        }
 }
 
 /**
@@ -75,7 +75,7 @@ static void wifi_event_handler(void *event_handler_arg,
 */
 void wifi_init(void)
 {
-    // Create the EventGroup
+    // Create the Wi-Fi EventGroup
     wifi_event_group = xEventGroupCreate();
 
     /**

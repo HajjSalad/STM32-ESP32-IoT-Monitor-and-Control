@@ -14,11 +14,18 @@
 #include "string.h"
 #include "stdio.h"
 
-#include "uart.h"
+#include "cloud_mqtt.h"
+#include "ota_update.h"
+#include "uart_tasks.h"
+#include "uart_driver.h"
+#include "queue_push_task.h"
+#include "shared_resources.h"
 #include "wifi.h"
-#include "mqtt.h"
 
 static const char *TAG = "MAIN";
+
+QueueHandle_t tx_queue;
+QueueHandle_t rx_queue;
 
 void app_main()
 {
@@ -41,8 +48,40 @@ void app_main()
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    // Craete tasks
-    uart_rxtx_task_init();             // UART2 communicates with STM32
-    wifi_manager_task_init();          // Wi-Fi Manager
-    cloud_mqtt_task_init();  // MQTT Cloud subscriptions
+    /**
+     * Priorities  (in FreeRTOS, 0 = lowest priority)
+     * 
+     * Priority 8  → Queue_push
+     * Priority 7  → Router
+     * Priority 6  → TX
+     * Priority 5  → RX
+     * Priority 4  → Wi-Fi
+     * Priority 4  → MQTT
+     * Priority 3  → OTA
+     * Priority 0  → Idle task
+    */
+
+    // Create RX Queue
+    tx_queue = xQueueCreate(10, sizeof(TXQueue_Item_t));
+    if (tx_queue == NULL) {
+        ESP_LOGE(TAG, "Failed to create tx_queue\n");
+        return;
+    }
+
+    // Create TX Queue
+    rx_queue = xQueueCreate(10, sizeof(RXQueue_Item_t));
+    if (rx_queue == NULL) {
+        ESP_LOGE(TAG, "Failed to create rx_queue\n");
+        return;
+    }
+
+    // Create tasks
+    queue_push_task_init();             // Priority: 4
+    uart_router_task_init();            // Priority: 6
+    uart_tx_task_init();                // Priority: 5
+    uart_rx_task_init();                // Priority: 5
+    //uart_rxtx_task_init();              // UART2 communicates with STM32
+    wifi_manager_task_init();           // Wi-Fi Manager
+    cloud_mqtt_task_init();             // MQTT Cloud subscriptions
+    ota_task_init();                    // Listens for OTA updates 
 }

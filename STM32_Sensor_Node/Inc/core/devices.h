@@ -2,7 +2,7 @@
 #define DEVICES_H_
 
 /**
- * @file devices.h
+ * @file  devices.h
  * @brief Device base class and derived classes declarations
 */
 

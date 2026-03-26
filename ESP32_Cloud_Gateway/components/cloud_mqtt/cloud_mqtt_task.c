@@ -12,7 +12,8 @@
 #include "string.h"
 #include <stdlib.h>
 
-#include "mqtt.h"
+#include "cloud_mqtt.h"
+#include "wifi.h"
 #include "task_priorities.h"
 
 #define WIFI_MANAGER_TASK_PERIOD_MS     (5000)
@@ -75,6 +76,9 @@ static void sensor_generator_task(void *pvParameters)
 
 static void cloud_mqtt_task(void *pvParameters)
 {
+    // Wait for Wi-Fi before doing anything MQTT related
+    wifi_wait_until_connected();
+
     // Initialize and connect to AWS IoT Core
     if (mqtt_init() != ESP_OK)
     {
@@ -82,6 +86,9 @@ static void cloud_mqtt_task(void *pvParameters)
         vTaskDelete(NULL);      // No need for the task then
         return;
     }
+
+    mqtt_start();
+    mqtt_wait_until_connected();
 
     // Wait until MQTT is connected
     xEventGroupWaitBits(mqtt_event_group, MQTT_CONNECTED_BIT,
@@ -101,8 +108,8 @@ static void cloud_mqtt_task(void *pvParameters)
             ESP_LOGI(TAG, "Publishing: %s", payload);
 
             // Publish the payload
-            if (mqtt_publish(topic, payload, qos) != ESP_OK)
-            ESP_LOGW(TAG, "Publish failed");
+            if (mqtt_publish_enqueue(topic, payload, strlen(payload), qos, 0, false) != ESP_OK)
+                ESP_LOGW(TAG, "Publish failed");
         }
         else {
             ESP_LOGW(TAG, "No sensor data received in %dms", PUBLISH_WAIT_MS);
@@ -118,6 +125,8 @@ void cloud_mqtt_task_init()
         ESP_LOGE(TAG, "Failed to create sensor queue.");
         return;
     }
+
+    mqtt_event_group = xEventGroupCreate();
 
     xTaskCreate(sensor_generator_task, "sensor_gen_task", 2048, NULL, TASK_PRIO_MEDIUM, NULL);
     xTaskCreate(cloud_mqtt_task, "cloud_mqtt_task", 4096, NULL, TASK_PRIO_MEDIUM, NULL);

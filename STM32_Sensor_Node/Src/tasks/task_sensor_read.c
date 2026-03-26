@@ -15,8 +15,7 @@
 
 #include "wrapper.h"
 #include "shared_resources.h"
-#include "task_logger.h"
-#include "task_sensor_read.h"
+#include "tasks.h"
 
 #define SENSOR_READ_TASK_PERIOD_MS    (10000U)
 
@@ -30,6 +29,7 @@ void vTaskSensorRead(void *pvParameters)
 {
     (void)pvParameters;                 // Suppress unused parameter warning
 
+    uint32_t   tick_count    = 0U; 
     char       msg[LOG_MSG_MAX_LEN];
     BaseType_t xRet          = pdFALSE;
     uint16_t   usTempValue   = 0U;
@@ -46,20 +46,26 @@ void vTaskSensorRead(void *pvParameters)
         configASSERT(xRet == pdTRUE);                       // Ensure mutex was released successfully
 
         // Log read values
-        LOG_SENSOR_DATA(msg, "SensorRead", "Get sensor values:", usTempValue, usMotionValue);
-        xRet = xQueueSend(xLogQueue, (const void *)msg, 0U);
-        if (xRet != pdTRUE) {
-            /* Log queue full — drop message */
-        }
+        // LOG_SENSOR_DATA(msg, "SensorRead", "Get sensor values:", usTempValue, usMotionValue);
+        // xRet = xQueueSend(xLogQueue, (const void *)msg, 0U);
+        // if (xRet != pdTRUE) {
+        //     /* Log queue full — drop message */
+        // }
 
         // Package sensor data into struct 
-        sensorData.temperature = usTempValue;
-        sensorData.motion      = usMotionValue;
+        sensorData.flags      = TEMP_SENSOR_DATA | MOTION_SENSOR_DATA;
+        sensorData.tempData   = usTempValue;
+        sensorData.motionData = usMotionValue;
 
         // Send to controller task via Sensor Queue
         xRet = xQueueSend(xSensorQueue, &sensorData, 0U);
         if (xRet != pdTRUE) {
             /* Sensor queue full — drop data */
+        }
+
+        if (tick_count++ % 100 == 0) {
+            UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
+            LOG("SensorRead stack watermark: %u words remaining", watermark);
         }
 
         // Sleep until next read cycle

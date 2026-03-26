@@ -13,11 +13,12 @@
 #include "semphr.h"
 
 #include "wrapper.h"
-#include "tasks.h"
 #include "shared_resources.h"
+#include "tasks.h"
 
 // Local function prototype
-static void control_devices(uint16_t temperature, uint16_t motion);
+static void control_temp_devices(uint16_t temperature);
+static void control_motion_devices(uint8_t motion);
 static void log_messages(const char* taskname, const char* message);
 
 /**
@@ -36,81 +37,96 @@ void vTaskController(void *pvParameters)
 {
     (void)pvParameters;                 // Suppress unused parameter warning
 
+    uint32_t   tick_count    = 0U; 
     char            msg[LOG_MSG_MAX_LEN];
     BaseType_t      xRet          = pdFALSE;
     SensorData_t    sensorData    = {0U};
-    TransmitData_t  txData        = {0U};
-    size_t          bytesWritten  = 0U;
+    TXQueue_Item_t  queueItem      = {0U};
 
     while (1) 
     {
-        // 1. Block waiting for sensor data struct from Sensor Queue
+        // Block waiting for sensor data struct from Sensor Queue
         xRet = xQueueReceive(xSensorQueue, &sensorData, portMAX_DELAY);
         if (xRet != pdTRUE) {
             continue;
         }
 
-        // 2. Make control decision - Turn devices on/off based on sensor values
-        control_devices(sensorData.temperature, sensorData.motion);
+        // Temp value available
+        if (sensorData.flags & TEMP_SENSOR_DATA) {
+            control_temp_devices(sensorData.tempData);
 
-        // Attach timestamp to transmit data struct
-        // For simplicity, we'll just log the current tick count as a timestamp
-        txData.temperature = sensorData.temperature;
-        txData.motion      = sensorData.motion;
-        txData.timestamp   = xTaskGetTickCount();           
+            queueItem.payloadType                  = TX_PAYLOAD_TEMP_DATA;
+            queueItem.payload.tempData.temperature = sensorData.tempData;
 
-        // 3. Write to stream buffer for transmission task
-        bytesWritten = xStreamBufferSend(xStreamBuffer, 
-                                         &txData, 
-                                         sizeof(txData), 
-                                         0U);
-        if (bytesWritten != sizeof(txData)) {
-            // Handle stream buffer send error (e.g., buffer full, log error, set flag)
+            xRet = xQueueSend(xTXQueue, &queueItem, 0U);
+            if (xRet != pdTRUE) {
+                /* TX queue full — drop data */
+            }
         }
 
-        // 4. Log the transmitted sensor data
-        LOG_TRANSMIT_DATA(msg, "Controller", "Send to stream:", txData.temperature, txData.motion, txData.timestamp);
-        xRet = xQueueSend(xLogQueue, msg, 0);
-        if (xRet != pdTRUE) {
-            // Log queue is full, handle error as needed (e.g., drop message, set error flag)
+        // Motion value available
+        if (sensorData.flags & MOTION_SENSOR_DATA) {
+            control_motion_devices(sensorData.motionData); 
+
+            queueItem.payloadType               = TX_PAYLOAD_MOTION_DATA;
+            queueItem.payload.motionData.motion = sensorData.motionData;
+
+            xRet = xQueueSend(xTXQueue, &queueItem, 0U);
+            if (xRet != pdTRUE) {
+                /* TX queue full — drop data */
+            }
+        }
+
+        if (tick_count++ % 100 == 0) {
+            UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
+            LOG("Controller stack watermark: %u words remaining", watermark);
         }
     }
 }
 
 /**
- * @brief Control devices based on sensor readings.
+ * @brief Control temperature devices based on sensor readings.
  * 
  * This function implements simple control logic:
  *  - If temperature > 25C, turn on AC and turn off heater.
  *  - If temperature < 20C, turn on heater and turn off AC.
  *  - If 20C <= temperature <= 25C, turn off both AC and heater.
- *  - If motion is detected, turn on light; otherwise, turn off light.
  * 
  * @param temperature Current temperature reading from the sensor.
- * @param motion Current motion reading from the sensor (0 or 1).
 */
-static void control_devices(uint16_t temperature, uint16_t motion) 
+static void control_temp_devices(uint16_t temperature) 
 {
     if (temperature > 25U) {
         turnOnAC();
         turnOffHeater();
-        log_messages("Controller", "T > 25C : AC on, Heater off");
+       // log_messages("Controller", "T > 25C : AC on, Heater off");
     } else if (temperature < 20U) {
         turnOnHeater();
         turnOffAC();
-        log_messages("Controller", "T < 20C : Heater on, AC off");
+      //  log_messages("Controller", "T < 20C : Heater on, AC off");
     } else {
         turnOffAC();
         turnOffHeater();
-        log_messages("Controller", "20C <= T <= 25C : AC off, Heater off");
+       // log_messages("Controller", "20C <= T <= 25C : AC off, Heater off");
     }
+}
 
+/**
+ * @brief Control motion devices based on sensor readings.
+ * 
+ * This function implements simple control logic:
+ *  - If motion is detected, turn on light; otherwise, turn off light.
+ * 
+ * @param motion Current motion reading from the sensor (0 or 1).
+*/
+static void control_motion_devices(uint8_t motion) 
+{
     if (motion > 0U) {
         turnOnLight();
-        log_messages("Controller", "Motion detected: Light on");
+        //log_messages("Controller", "Motion detected: Light on");
     } else {
         turnOffLight();
-        log_messages("Controller", "Motion not detected: Light off");
+        //log_messages("Controller", "Motion not detected: Light off");
     }
 }
 

@@ -2,7 +2,7 @@
 #define TASK_PRIORITIES_H
 
 /**
- * @file uart2.h
+  * @file task_priorities.h
  * @brief
 */
 

@@ -1,5 +1,5 @@
 /**
- * @file main.c
+ * @file  main.c
  * @brief Main entry point for the STM32 Sensor Node application.
  * 
  * Initializes peripherals, creates FreeRTOS resources (mutexes, queues, 
@@ -14,23 +14,17 @@
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
-#include "stream_buffer.h"
 
-#include "uart.h"
+#include "uart_driver.h"
 #include "shared_resources.h"
-#include "task_logger.h"
-#include "task_transmit.h"
-#include "task_controller.h"
-#include "task_sensor_write.h"
-#include "task_sensor_read.h"
+#include "tasks.h"
+#include "rtc_driver.h"
 
-#define STACK_SIZE_WORDS       (1024U)
-
-// Global resource handles
-SemaphoreHandle_t    xSensorMutex      = NULL;
-QueueHandle_t        xLogQueue         = NULL;
-QueueHandle_t        xSensorQueue      = NULL;
-StreamBufferHandle_t xStreamBuffer     = NULL;
+SemaphoreHandle_t    xSensorMutex      = NULL;      // Mutex to protect shared sensor object access
+QueueHandle_t        xSensorQueue      = NULL;      // Sensor data queue btwn sensor_read and controller
+QueueHandle_t        xTXQueue          = NULL;      // UART TX queue
+QueueHandle_t        xRXQueue          = NULL;      // UART RX queue
+QueueHandle_t        xLogQueue         = NULL;      // Logger queue for system logger
 
 // Local function prototypes
 static void check_reset_cause(void);
@@ -59,34 +53,63 @@ int main(void)
 
     uart2_init();               // Initialize UART2 for logging
     uart1_init();               // Initialize UART1 for ESP32 communication
+    RTC_init();                 // Initialize RTC
 
     check_reset_cause();        // Log the cause of the last reset
 
     LOG("*** STM32 Sensor Node Starting ***");
 
+    RTC_get_time();
+    LOG("Time: %02d:%02d:%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
+
+    RTC_get_date();
+    LOG("Date: %02d/%02d/%02d", sDate.Day, sDate.Month, sDate.Year);
+
     // Create synchronization primitives
     xSensorMutex = xSemaphoreCreateMutex();
     configASSERT(xSensorMutex != NULL);
 
-    xLogQueue = xQueueCreate(LOG_QUEUE_DEPTH, LOG_MSG_MAX_LEN);
-    configASSERT(xLogQueue != NULL);
-
     xSensorQueue = xQueueCreate(SENSOR_QUEUE_DEPTH, sizeof(SensorData_t));
     configASSERT(xSensorQueue != NULL);
 
-    xStreamBuffer = xStreamBufferCreate(STREAM_BUFFER_SIZE, sizeof(TransmitData_t));
-    configASSERT(xStreamBuffer != NULL);
+    xTXQueue = xQueueCreate(TX_QUEUE_LENGTH, sizeof(TXQueue_Item_t));
+    configASSERT(xTXQueue != NULL);
+
+    xRXQueue = xQueueCreate(RX_QUEUE_LENGTH, sizeof(RXQueue_Item_t));
+    configASSERT(xRXQueue != NULL);
+
+    xLogQueue = xQueueCreate(LOG_QUEUE_DEPTH, LOG_MSG_MAX_LEN);
+    configASSERT(xLogQueue != NULL);
+
+    /**
+     * Priorities  (in FreeRTOS, 0 = lowest priority)
+     * MAX_PRIORITIES = 16
+     * 
+     * Priority 14 → Timer service task
+     * Priority 8  → SensorWrite
+     * Priority 7  → SensorRead
+     * Priority 6  → Controller
+     * Priority 5  → Router task
+     * Priority 4  → TX task
+     * Priority 4  → RX task
+     * Priority 3  → Logger
+     * Priority 0  → Idle task
+    */
 
     // Create tasks
-    xRet = xTaskCreate(vTaskSensorWrite, "SensorWrite", STACK_SIZE_WORDS, NULL, 5, NULL);
+    xRet = xTaskCreate(vTaskSensorWrite, "SensorWrite", 512, NULL, 8, NULL);
     configASSERT(xRet == pdPASS);
-    xRet = xTaskCreate(vTaskSensorRead,  "SensorRead",  STACK_SIZE_WORDS, NULL, 4, NULL);
+    xRet = xTaskCreate(vTaskSensorRead,  "SensorRead",  512, NULL, 7, NULL);
     configASSERT(xRet == pdPASS);
-    xRet = xTaskCreate(vTaskController,  "Controller",  STACK_SIZE_WORDS, NULL, 3, NULL);
+    xRet = xTaskCreate(vTaskController,  "Controller",  512, NULL, 6, NULL);
     configASSERT(xRet == pdPASS);
-    xRet = xTaskCreate(vTaskTransmit,    "Transmit",    STACK_SIZE_WORDS, NULL, 2, NULL);
+    xRet = xTaskCreate(vTaskRouter,       "Router",     2048, NULL, 5, &xRouterTaskHandle);
     configASSERT(xRet == pdPASS);
-    xRet = xTaskCreate(vTaskLogger,      "Logger",      STACK_SIZE_WORDS, NULL, 1, NULL);
+    xRet = xTaskCreate(vTaskTX,            "TX",        4096, NULL, 4, &xTXTaskHandle);
+    configASSERT(xRet == pdPASS);
+    xRet = xTaskCreate(vTaskRX,            "RX",        2048, NULL, 4, NULL);
+    configASSERT(xRet == pdPASS);
+    xRet = xTaskCreate(vTaskLogger,       "Logger",     1024, NULL, 3, NULL);
     configASSERT(xRet == pdPASS);
 
     LOG("Tasks created. Free heap: %u bytes", xPortGetFreeHeapSize());

@@ -1,0 +1,42 @@
+name: Firmware CI
+
+# Trigger conditions
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]        # run when PR is opened targeting main
+                              # catch bugs before merge into main
+
+jobs:
+  # ────────────────────────────────────────
+  # Job 1: Build STM32 firmware
+  # Compile the STM32 sensor node firmware
+  # ────────────────────────────────────────
+  build-stm32:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository       # pull latest code from GitHub onto the runner
+        uses: actions/checkout@v3
+
+      - name: Build STM32 firmware
+        run: |
+          cd STM32_Sensor_Node
+          make clean
+          make              
+
+  # ────────────────────────────────────────
+  # Job 2: Build ESP32 firmware
+  # Compile the ESP32 gateway firmware
+  # ────────────────────────────────────────
+  build-esp32:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Build ESP32 firmware
+        run: |
+          cd ESP32_Cloud_Gateway
+          . $HOME/esp/esp-idf/export.sh
+          idf.py build

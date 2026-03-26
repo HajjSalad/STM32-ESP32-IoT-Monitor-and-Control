@@ -16,8 +16,7 @@
 
 #include "wrapper.h"
 #include "shared_resources.h"
-#include "task_logger.h"
-#include "task_sensor_write.h"
+#include "tasks.h"
 
 #define SENSOR_TASK_PERIOD_MS    (10000U)
 #define SENSOR_TEMP_MAX          (100U)
@@ -35,8 +34,9 @@ void vTaskSensorWrite(void *pvParameters)
 {
     (void)pvParameters;                 // Suppress unused parameter warning
 
+    uint32_t   tick_count    = 0U; 
     char       msg[LOG_MSG_MAX_LEN];
-    BaseType_t xRet         = pdFALSE;
+    BaseType_t xRet          = pdFALSE;
     uint16_t   usTempValue   = 0U;
     uint16_t   usMotionValue = 0U;
 
@@ -53,11 +53,16 @@ void vTaskSensorWrite(void *pvParameters)
         xRet = xSemaphoreGive(xSensorMutex);                // Release the mutex
         configASSERT(xRet == pdTRUE);                       // Ensure mutex was released successfully
 
-        // Log written values
-        LOG_SENSOR_DATA(msg, "SensorWrite", "Set sensor values:", usTempValue, usMotionValue);
-        xRet = xQueueSend(xLogQueue, (const void *)msg, 0U);
-        if (xRet != pdTRUE) {
-            /* Log queue full — drop message */
+        // // Log written values
+        // LOG_SENSOR_DATA(msg, "SensorWrite", "Set sensor values:", usTempValue, usMotionValue);
+        // xRet = xQueueSend(xLogQueue, (const void *)msg, 0U);
+        // if (xRet != pdTRUE) {
+        //     /* Log queue full — drop message */
+        // }
+
+        if (tick_count++ % 100 == 0) {
+            UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
+            LOG("SensorWrite stack watermark: %u words remaining", watermark);
         }
 
         // Sleep until next period

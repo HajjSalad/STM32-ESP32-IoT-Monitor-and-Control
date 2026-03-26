@@ -4,8 +4,11 @@
 *.exe
 
 # Ignore build directories
+/ESP32_Cloud_Gateway/build/
+STM32_Sensor_Node/Build/
 /build/
 /dist/
+/STM32_Bootloader/
 
 # Ignore logs
 *.log
@@ -17,3 +20,4 @@
 .DS_Store
 .terraform/
 *.tfstate
+sdkconfig.old

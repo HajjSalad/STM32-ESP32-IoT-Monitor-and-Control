@@ -1,0 +1,17 @@
+idf_component_register(
+    SRCS 
+        "json_parser.c" 
+        "ota_task.c" 
+        "ota_update.c"
+    INCLUDE_DIRS 
+                "include" 
+                "../../main/include"
+                "../cloud_mqtt/include"
+    REQUIRES 
+            driver 
+            esp_http_client 
+            esp_https_ota 
+            esp_partition
+            mqtt
+            json
+)

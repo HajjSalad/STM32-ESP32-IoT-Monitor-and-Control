@@ -1,5 +1,5 @@
 /**
- * @file devices.cpp
+ * @file  devices.cpp
  * @brief Implementation of Device base class and derived device classes.
 */
 

@@ -14,7 +14,7 @@
 #include "task.h"
 #include "queue.h"
 
-#include "uart.h"
+#include "uart_driver.h"
 #include "tasks.h"
 #include "shared_resources.h"
 
@@ -22,6 +22,7 @@ void vTaskLogger(void *pvParameters)
 {
     (void)pvParameters;                 // Suppress unused parameter warning
 
+    uint32_t   tick_count    = 0U; 
     char msg[LOG_MSG_MAX_LEN];
     BaseType_t ret;
 
@@ -32,6 +33,11 @@ void vTaskLogger(void *pvParameters)
             msg[LOG_MSG_MAX_LEN - 1] = '\0';  // Ensure null termination
             printf("%s\n\r", msg);
         }
+
+        // if (tick_count++ % 100 == 0) {
+        //     UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
+        //     LOG("Logger stack watermark: %u words remaining", watermark);
+        // }
     }
 }
 
