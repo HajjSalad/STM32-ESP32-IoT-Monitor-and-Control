@@ -13,12 +13,15 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "timers.h"
 #include "semphr.h"
+#include "stream_buffer.h"
 
-#include "uart_driver.h"
-#include "shared_resources.h"
 #include "tasks.h"
 #include "rtc_driver.h"
+#include "uart_driver.h"
+#include "iwdg_driver.h"
+#include "shared_resources.h"
 
 SemaphoreHandle_t    xSensorMutex      = NULL;      // Mutex to protect shared sensor object access
 QueueHandle_t        xSensorQueue      = NULL;      // Sensor data queue btwn sensor_read and controller
@@ -54,20 +57,18 @@ int main(void)
     uart2_init();               // Initialize UART2 for logging
     uart1_init();               // Initialize UART1 for ESP32 communication
     RTC_init();                 // Initialize RTC
+    iwdg_init();
 
     check_reset_cause();        // Log the cause of the last reset
 
     LOG("*** STM32 Sensor Node Starting ***");
 
-    RTC_get_time();
-    LOG("Time: %02d:%02d:%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
-
-    RTC_get_date();
-    LOG("Date: %02d/%02d/%02d", sDate.Day, sDate.Month, sDate.Year);
-
     // Create synchronization primitives
     xSensorMutex = xSemaphoreCreateMutex();
     configASSERT(xSensorMutex != NULL);
+
+    xUartStreamBuffer = xStreamBufferCreate(256, 8);
+    configASSERT(xUartStreamBuffer != NULL);
 
     xSensorQueue = xQueueCreate(SENSOR_QUEUE_DEPTH, sizeof(SensorData_t));
     configASSERT(xSensorQueue != NULL);
@@ -86,7 +87,8 @@ int main(void)
      * MAX_PRIORITIES = 16
      * 
      * Priority 14 → Timer service task
-     * Priority 8  → SensorWrite
+     * Priority 9  → WatchdogMonitor
+     * Priority 8  → SensorSample
      * Priority 7  → SensorRead
      * Priority 6  → Controller
      * Priority 5  → Router task
@@ -97,20 +99,27 @@ int main(void)
     */
 
     // Create tasks
-    xRet = xTaskCreate(vTaskSensorWrite, "SensorWrite", 512, NULL, 8, NULL);
+    xRet = xTaskCreate(vTaskSensorSample,    "SensorSample",    512, NULL, 8, &xSensorSampleHandle);
     configASSERT(xRet == pdPASS);
-    xRet = xTaskCreate(vTaskSensorRead,  "SensorRead",  512, NULL, 7, NULL);
+    xRet = xTaskCreate(vTaskSensorRead,      "SensorRead",      512, NULL, 7, &xSensorReadHandle);
     configASSERT(xRet == pdPASS);
-    xRet = xTaskCreate(vTaskController,  "Controller",  512, NULL, 6, NULL);
+    xRet = xTaskCreate(vTaskController,      "Controller",      512, NULL, 6, NULL);
     configASSERT(xRet == pdPASS);
-    xRet = xTaskCreate(vTaskRouter,       "Router",     2048, NULL, 5, &xRouterTaskHandle);
+    xRet = xTaskCreate(vTaskTX,              "TX",             4096, NULL, 4, &xTXTaskHandle);
     configASSERT(xRet == pdPASS);
-    xRet = xTaskCreate(vTaskTX,            "TX",        4096, NULL, 4, &xTXTaskHandle);
+    xRet = xTaskCreate(vTaskRouter,          "Router",         2048, NULL, 5, &xRouterTaskHandle);
     configASSERT(xRet == pdPASS);
-    xRet = xTaskCreate(vTaskRX,            "RX",        2048, NULL, 4, NULL);
+    xRet = xTaskCreate(vTaskRX,              "RX",             2048, NULL, 4, NULL);
     configASSERT(xRet == pdPASS);
-    xRet = xTaskCreate(vTaskLogger,       "Logger",     1024, NULL, 3, NULL);
+    xRet = xTaskCreate(vTaskLogger,          "Logger",         1024, NULL, 3, NULL);
     configASSERT(xRet == pdPASS);
+    xRet = xTaskCreate(vTaskWatchdogMonitor, "WatchdogMonitor", 512, NULL, 9, NULL);
+    configASSERT(xRet == pdPASS);
+
+    // Software timer to trigger vTaskSensor Sample
+    xSampleTimer = xTimerCreate("SampleTimer", pdMS_TO_TICKS(5000),         // 5 second period
+                                pdTRUE, NULL, vSampleTimerCallback);        // callback function
+    xTimerStart(xSampleTimer, 0);                                           // start timer
 
     LOG("Tasks created. Free heap: %u bytes", xPortGetFreeHeapSize());
     LOG("Starting scheduler...");
@@ -131,6 +140,7 @@ static void check_reset_cause(void)
     uint32_t cause = RCC->CSR;
     RCC->CSR |= RCC_CSR_RMVF;           // Clear reset flags
 
+    LOG("");
     if (cause & RCC_CSR_IWDGRSTF) { LOG("Reset: Watchdog"); }
     if (cause & RCC_CSR_SFTRSTF)  { LOG("Reset: Software"); }
     if (cause & RCC_CSR_PORRSTF)  { LOG("Reset: Power-On"); }

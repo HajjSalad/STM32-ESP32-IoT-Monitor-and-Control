@@ -1,5 +1,5 @@
 /**
- * @file task_sensor_read.c
+ * @file  task_sensor_read.c
  * @brief Sensor data reading task.
  * 
  * Reads sensor data from the Room object via the C wrapper interface,
@@ -13,11 +13,16 @@
 #include "task.h"
 #include "semphr.h"
 
-#include "wrapper.h"
-#include "shared_resources.h"
 #include "tasks.h"
+#include "wrapper.h"
+#include "rtc_driver.h"
+#include "shared_resources.h"
 
 #define SENSOR_READ_TASK_PERIOD_MS    (10000U)
+
+TaskHandle_t xSensorReadHandle = NULL;
+
+volatile uint8_t task2_alive = 0U;
 
 /**
  * @brief Sensor read task entry point.
@@ -38,12 +43,17 @@ void vTaskSensorRead(void *pvParameters)
 
     while (1) 
     {
-        // Read from Room object via C wrapper
+        // Block until notified by vTaskSensorSample
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+        // 1. Read from Room object via C wrapper
         xSemaphoreTake(xSensorMutex, portMAX_DELAY);        // Take the mutex
         usTempValue = getTemperature();
         usMotionValue = getMotion();
         xRet = xSemaphoreGive(xSensorMutex);                // Release the mutex
         configASSERT(xRet == pdTRUE);                       // Ensure mutex was released successfully
+
+
 
         // Log read values
         // LOG_SENSOR_DATA(msg, "SensorRead", "Get sensor values:", usTempValue, usMotionValue);
@@ -52,20 +62,29 @@ void vTaskSensorRead(void *pvParameters)
         //     /* Log queue full — drop message */
         // }
 
-        // Package sensor data into struct 
+        // 2. Package sensor data into struct 
         sensorData.flags      = TEMP_SENSOR_DATA | MOTION_SENSOR_DATA;
         sensorData.tempData   = usTempValue;
         sensorData.motionData = usMotionValue;
 
-        // Send to controller task via Sensor Queue
+        // 3. Send to controller task via Sensor Queue
         xRet = xQueueSend(xSensorQueue, &sensorData, 0U);
         if (xRet != pdTRUE) {
             /* Sensor queue full — drop data */
         }
 
+        // Log HighWaterMark
         if (tick_count++ % 100 == 0) {
             UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
             LOG("SensorRead stack watermark: %u words remaining", watermark);
+        }
+
+        // 4. Set alive flag
+        task2_alive = 1;
+        snprintf(msg, sizeof(msg), "[T2] Sent alive heartbeat");
+        xRet = xQueueSend(xLogQueue, msg, 0U);
+        if (xRet != pdTRUE) {
+            /* Log queue full — increment error counter or set error flag */
         }
 
         // Sleep until next read cycle

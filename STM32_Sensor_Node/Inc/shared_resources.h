@@ -9,6 +9,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "semphr.h"
+#include "stream_buffer.h"
 #include <stdio.h>
 
 /** @brief Format for printf */
@@ -34,6 +35,9 @@
 // Mutex to protect shared sensor object access between sensor_write and sensor_read
 extern SemaphoreHandle_t        xSensorMutex;
 
+// Byte stream from USART1 ISR to uart_router task
+extern StreamBufferHandle_t     xUartStreamBuffer;
+
 // Logger queue — Task_read, Task_controller and Task_transmit post log messages to Task_logger
 #define LOG_MSG_MAX_LEN         (128U)
 #define LOG_QUEUE_DEPTH         (20U)
@@ -55,6 +59,8 @@ typedef struct __attribute__((packed)) {
     uint16_t  tempData;         // valid if flags & TEMP_SENSOR_DATA
     uint8_t   motionData;       // valid if flags & MOTION_SENSOR_DATA
 } SensorData_t; 
+
+extern volatile uint8_t motion_detected;  /* Motion detection: 0/1 — GPIO */
 
 // TX and RX Queues 
 #define TX_QUEUE_LENGTH         10

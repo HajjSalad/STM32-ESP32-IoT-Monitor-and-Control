@@ -10,8 +10,11 @@ BUILD_DIR = Build
 
 # Source files directory
 C_SOURCES = $(wildcard Src/*.c) \
+			$(wildcard Src/comm/*.c) \
+			$(wildcard Src/sensors/*.c) \
+			$(wildcard Src/system/*.c) \
 			$(wildcard Src/tasks/*.c) \
-            $(wildcard Src/core/*.c) \
+            $(wildcard Src/utils/*.c) \
             $(wildcard FreeRTOS/Source/*.c) \
             $(wildcard FreeRTOS/Source/portable/GCC/ARM_CM4F/*.c) \
             FreeRTOS/Source/portable/MemMang/heap_4.c
@@ -37,8 +40,12 @@ MCU = $(CPU) -mthumb $(FPU) $(FLOAT_ABI)
 
 # C includes
 C_INCLUDES = -IInc \
-             -IInc/tasks \
+             -IInc/comm \
              -IInc/core \
+             -IInc/sensors \
+			 -IInc/system \
+             -IInc/tasks \
+			 -IInc/utils \
              -IInc/CMSIS/Core/Include \
              -IInc/STM32F4xx/Include \
              -IFreeRTOS/Source/include \
@@ -98,8 +105,28 @@ $(BUILD_DIR)/%.o: Src/%.cpp | $(BUILD_DIR)
 	@echo "Compiling (C++) $< ..."
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# Compile C sources - Src/comm/
+$(BUILD_DIR)/%.o: Src/comm/%.c | $(BUILD_DIR)
+	@echo "Compiling $< ..."
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile C sources - Src/sensors/
+$(BUILD_DIR)/%.o: Src/sensors/%.c | $(BUILD_DIR)
+	@echo "Compiling $< ..."
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile C sources - Src/system/
+$(BUILD_DIR)/%.o: Src/system/%.c | $(BUILD_DIR)
+	@echo "Compiling $< ..."
+	$(CC) $(CFLAGS) -c $< -o $@
+
 # Compile C sources - Src/tasks/
 $(BUILD_DIR)/%.o: Src/tasks/%.c | $(BUILD_DIR)
+	@echo "Compiling $< ..."
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile C sources - Src/utils/
+$(BUILD_DIR)/%.o: Src/utils/%.c | $(BUILD_DIR)
 	@echo "Compiling $< ..."
 	$(CC) $(CFLAGS) -c $< -o $@
 

@@ -6,17 +6,19 @@
 */
 
 #include "stm32f446xx.h"
+
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
-#include "shared_resources.h"
-#include "uart_driver.h"
-#include "tasks.h"
-
+#include "stream_buffer.h"
 
 #include <stdio.h>
 #include <string.h>
+
+#include "tasks.h"
+#include "uart_driver.h"
+#include "shared_resources.h"
 
 #define GPIOAEN				(1U<<0)
 #define UART1EN				(1U<<4)
@@ -64,7 +66,7 @@ void uart1_init(void)
 
 	USART1->CR1 = (CR1_TE | CR1_RE);	// Configure the transfer direction
 	USART1->CR1 |= CR1_RXNE;       		// Enable RXNE interrupt
-	NVIC_SetPriority(USART1_IRQn, 6);
+	NVIC_SetPriority(USART1_IRQn, 10);
 	NVIC_EnableIRQ(USART1_IRQn);     	// Enable USART1 in NVIC
 	USART1->CR1 |= CR1_UE;				// Enable USART Module
 }
@@ -104,13 +106,18 @@ void USART1_IRQHandler(void)
 	{
 		uint8_t byte = USART1->DR;
 
-		uint16_t next = (rxHead + 1) % UART_RX_BUFFER_SIZE;
+		BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        xStreamBufferSendFromISR(xUartStreamBuffer, &byte, 
+                                 1, &xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 
-		if (next != rxTail) 		// Buffer not full
-		{
-			rxBuffer[rxHead] = byte;
-			rxHead = next;
-		}
+		// uint16_t next = (rxHead + 1) % UART_RX_BUFFER_SIZE;
+		//
+		// if (next != rxTail) 		// Buffer not full
+		// {
+		// 	rxBuffer[rxHead] = byte;
+		// 	rxHead = next;
+		// }
 	}
 }
 

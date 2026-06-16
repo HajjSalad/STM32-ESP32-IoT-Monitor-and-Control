@@ -11,10 +11,13 @@
 #include <string.h>
 #include <stdint.h>
 
+
+#include "tasks.h"
 #include "crc_16.h"
 #include "uart_driver.h"
-#include "tasks.h"
 #include "shared_resources.h"
+
+volatile uint8_t task6_alive = 0U;
 
 // Static function prototypes
 static void send_ack(uint8_t seq, uint8_t type);
@@ -24,8 +27,10 @@ void vTaskRX(void *pvParameters)
     (void)pvParameters;                 // Suppress unused parameter warning
 
     uint32_t   tick_count    = 0U; 
-    BaseType_t    xRet          = pdFALSE;
     RXQueue_Item_t queueItem    = {0U};
+
+    BaseType_t xRet = pdFALSE;
+    char msg[LOG_MSG_MAX_LEN];
 
     //printf("[RX] Stack HWM: %lu words remaining\n", uxTaskGetStackHighWaterMark(NULL));
 
@@ -51,6 +56,14 @@ void vTaskRX(void *pvParameters)
         if (tick_count++ % 100 == 0) {
             UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
             LOG("UART_RX stack watermark: %u words remaining", watermark);
+        }
+
+        // Set alive flag
+        task6_alive = 1;
+        snprintf(msg, sizeof(msg), "[T6] Sent alive heartbeat");
+        xRet = xQueueSend(xLogQueue, msg, 0U);
+        if (xRet != pdTRUE) {
+            /* Log queue full — increment error counter or set error flag */
         }
     }
 }

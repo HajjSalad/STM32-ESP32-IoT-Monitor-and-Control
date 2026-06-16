@@ -12,9 +12,11 @@
 #include "queue.h"
 #include "semphr.h"
 
+#include "tasks.h"
 #include "wrapper.h"
 #include "shared_resources.h"
-#include "tasks.h"
+
+volatile uint8_t task3_alive = 0U;
 
 // Local function prototype
 static void control_temp_devices(uint16_t temperature);
@@ -80,6 +82,14 @@ void vTaskController(void *pvParameters)
         if (tick_count++ % 100 == 0) {
             UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
             LOG("Controller stack watermark: %u words remaining", watermark);
+        }
+
+        // Set alive flag
+        task3_alive = 1;
+        snprintf(msg, sizeof(msg), "[T3] Sent alive heartbeat");
+        xRet = xQueueSend(xLogQueue, msg, 0U);
+        if (xRet != pdTRUE) {
+            /* Log queue full — increment error counter or set error flag */
         }
     }
 }

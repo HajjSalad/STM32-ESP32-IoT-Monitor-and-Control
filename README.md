@@ -8,6 +8,7 @@ The system is split into two components:
 
 📓 Design notes, dev journal, and setup guides (STM32 & ESP32 project creation, design decisions) are documented in the [Project Notion Page](https://hajjsalad.notion.site/iot-monitor-control)
 
+![overview](./project_diagram.png)
 ---
 ### 🧪 STM32 Sensor Node 
 The FreeRTOS-based Sensor Node is  structured around a C++ object model wrapped in a C interface. It monitors temperature and motion, drives climate and lighting control, and forwards sensor data and device state to an ESP32 over UART.

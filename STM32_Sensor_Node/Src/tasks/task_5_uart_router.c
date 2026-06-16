@@ -1,5 +1,5 @@
 /**
- * @file  uart_router_task.c
+ * @file  task_4_uart_router.c
  * @brief 
 */
 
@@ -8,17 +8,22 @@
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
+#include "stream_buffer.h"
+
 #include <string.h>
 #include <stdint.h>
 
-#include "shared_resources.h"
+#include "tasks.h"
 #include "crc_16.h"
 #include "uart_driver.h"
-#include "tasks.h"
+#include "shared_resources.h"
 
 #define ROUTER_BUFFER_SIZE     128
 
-TaskHandle_t xRouterTaskHandle         = NULL;
+volatile uint8_t task5_alive = 0U;
+
+TaskHandle_t         xRouterTaskHandle  = NULL;
+StreamBufferHandle_t xUartStreamBuffer  = NULL;
 
 volatile uint8_t  rxBuffer[UART_RX_BUFFER_SIZE];
 volatile uint16_t rxHead = 0;
@@ -177,35 +182,70 @@ static void process_rx(const uint8_t *buf, uint8_t len)
 
 void vTaskRouter(void *pvParameters) 
 {
-    uint32_t   tick_count    = 0U; 
-    uint8_t byte;
-    uint8_t buf[ROUTER_BUFFER_SIZE] = {0U};
-    uint8_t buf_index = 0U;
+    uint8_t  byte;
+    uint8_t  buf[ROUTER_BUFFER_SIZE] = {0U};
+    uint8_t  buf_index = 0U;
+
+    size_t   bytes_read;
+    uint8_t  chunk[32];
+
+    BaseType_t xRet = pdFALSE;
+    char msg[LOG_MSG_MAX_LEN];
+
+    uint32_t tick_count    = 0U;
 
     while(1) 
     {
-        while (rxHead != rxTail) 
+        // Block until 8 bytes available
+        bytes_read = xStreamBufferReceive(xUartStreamBuffer, chunk, sizeof(chunk), portMAX_DELAY);
+
+        for (size_t i = 0; i < bytes_read; i++) 
         {
-            byte   = rxBuffer[rxTail];
-            rxTail = (rxTail + 1) % UART_RX_BUFFER_SIZE;
+            byte = chunk[i];
 
             if (byte == SOF_BYTE) {
-                buf_index = 0;                                 // reset on new packet
-                buf[buf_index++] = byte;                       // Starting recording packets
+                buf_index = 0;                  // reset for new packet
+                buf[buf_index++] = byte;        // strat recording packet
             } else if (buf_index > 0) {
-                buf[buf_index++] = byte;
+                buf[buf_index++] = byte;        // continue recording packet
 
-                if (byte == EOF_BYTE) {
-                    process_rx(buf, buf_index);
-                    buf_index = 0;                                 // reset for next packet
+                if (byte == EOF_BYTE) {         // reached end
+                    process_rx(buf, buf_index);    // process packet
+                    buf_index = 0;
                 }
             }
         }
+
+        // Set alive flag
+        task5_alive = 1;
+        // snprintf(msg, sizeof(msg), "[T5] Sent alive heartbeat");
+        // xRet = xQueueSend(xLogQueue, msg, 0U);
+        // if (xRet != pdTRUE) {
+        //     /* Log queue full — increment error counter or set error flag */
+        // }
+
+        // while (rxHead != rxTail) 
+        // {
+        //     byte   = rxBuffer[rxTail];
+        //     rxTail = (rxTail + 1) % UART_RX_BUFFER_SIZE;
+
+        //     if (byte == SOF_BYTE) {
+        //         buf_index = 0;                                 // reset on new packet
+        //         buf[buf_index++] = byte;                       // Starting recording packets
+        //     } else if (buf_index > 0) {
+        //         buf[buf_index++] = byte;
+
+        //         if (byte == EOF_BYTE) {
+        //             process_rx(buf, buf_index);
+        //             buf_index = 0;                                 // reset for next packet
+        //         }
+        //     }
+        // }
 
         // if (tick_count++ % 100 == 0) {
         //     UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
         //     LOG("UART_Router stack watermark: %u words remaining", watermark);
         // }
-        vTaskDelay(10);
+        // vTaskDelay(10);
     } 
 }

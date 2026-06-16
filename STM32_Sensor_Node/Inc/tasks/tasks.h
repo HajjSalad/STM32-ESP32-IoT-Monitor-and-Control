@@ -9,6 +9,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "timers.h"
 #include "shared_resources.h"
 
 #include <stdio.h>
@@ -28,12 +29,24 @@
 
 #define UART_RX_BUFFER_SIZE         256
 
-extern TaskHandle_t xRouterTaskHandle;
-extern TaskHandle_t xTXTaskHandle;
+extern TaskHandle_t  xSensorSampleHandle;
+extern TaskHandle_t  xSensorReadHandle;
+extern TaskHandle_t  xRouterTaskHandle;
+extern TaskHandle_t  xTXTaskHandle;
+extern TimerHandle_t xSampleTimer;
 
 extern volatile uint8_t  rxBuffer[UART_RX_BUFFER_SIZE];
 extern volatile uint16_t rxHead;
 extern volatile uint16_t rxTail;
+
+// IWDG Task Alive flags
+extern volatile uint8_t task1_alive;
+extern volatile uint8_t task2_alive;
+extern volatile uint8_t task3_alive;
+extern volatile uint8_t task4_alive;
+extern volatile uint8_t task5_alive;
+extern volatile uint8_t task6_alive;
+extern volatile uint8_t task7_alive;
 
 typedef enum {
     STATE_SEND_HANDSHAKE,
@@ -64,12 +77,14 @@ typedef struct {
     TX_Result_t       result;
 } TX_Transaction_t;
 
-void vTaskSensorWrite(void *pvParameters);
+void vTaskSensorSample(void *pvParameters);
+void vSampleTimerCallback(TimerHandle_t xTimer);
 void vTaskSensorRead(void *pvParameters);
 void vTaskController(void *pvParameters);
 void vTaskRouter(void *pvParameters);
 void vTaskTX(void *pvParameters);
 void vTaskRX(void *pvParameters);
 void vTaskLogger(void *pvParameters);
+void vTaskWatchdogMonitor(void *pvParameters);
 
 #endif // TASKS_H 

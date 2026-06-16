@@ -1,5 +1,5 @@
 /**
- * @file  task_uart_tx.c
+ * @file  task_4_uart_tx.c
  * @brief 
 */
 
@@ -8,17 +8,20 @@
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
+
 #include <string.h>
 #include <stdint.h>
 #include <limits.h>
 
+#include "tasks.h"
 #include "crc_16.h"
 #include "uart_driver.h"
-#include "tasks.h"
 #include "shared_resources.h"
 
 #define RETRY_MAX            5
-#define UART_TIMEOUT_MS      5000
+#define UART_TIMEOUT_MS      5000 
+
+volatile uint8_t task4_alive = 0U;
 
 // Static function prototypes
 static void send_handshake_request(uint8_t seq, uint8_t retry_count);
@@ -38,8 +41,10 @@ void vTaskTX(void *pvParameters)
     (void)pvParameters;                          // Suppress unused parameter warning
 
     uint32_t   tick_count    = 0U; 
-    BaseType_t    xRet          = pdFALSE;
     TXQueue_Item_t queueItem    = {0U};
+
+    BaseType_t xRet = pdFALSE;
+    char msg[LOG_MSG_MAX_LEN];
 
     while(1) {
 
@@ -55,6 +60,12 @@ void vTaskTX(void *pvParameters)
         // else {
         //     printf("Motion from TXQueue: 0x%02X\n", queueItem.payload.motionData);
         // }
+
+        // // 2. Get time and date
+        // RTC_get_time();
+        // //LOG("Time: %02d:%02d:%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
+        // RTC_get_date();
+        // //LOG("Date: %02d/%02d/%02d", sDate.Day, sDate.Month, sDate.Year);
 
 
         // Transaction begins when item dequeued
@@ -84,6 +95,7 @@ void vTaskTX(void *pvParameters)
                     tx_ctx.state = STATE_WAIT_HANDSHAKE_ACK;     
                     break;
                 }
+
                 case STATE_WAIT_HANDSHAKE_ACK:
                 {
                     uint32_t notifyValue = 0U;
@@ -109,6 +121,7 @@ void vTaskTX(void *pvParameters)
                     }
                     break;
                 }
+
                 case STATE_SEND_DATA:
                 {
                     send_data_packet(tx_ctx.seq, tx_ctx.retry_count, &queueItem);
@@ -116,6 +129,7 @@ void vTaskTX(void *pvParameters)
                     tx_ctx.state = STATE_WAIT_DATA_ACK;
                     break;
                 }
+
                 case STATE_WAIT_DATA_ACK:
                 {
                     uint32_t notifyValue = 0U;
@@ -146,6 +160,7 @@ void vTaskTX(void *pvParameters)
                     }
                     break;
                 }
+
                 case STATE_IDLE:
                     break;
             }
@@ -153,7 +168,15 @@ void vTaskTX(void *pvParameters)
         if (tick_count++ % 100 == 0) {
             UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
             LOG("UART_TX stack watermark: %u words remaining", watermark);
-        }
+        }   
+        
+        // 4. Set alive flag
+        task4_alive = 1;
+        snprintf(msg, sizeof(msg), "[T4] Sent alive heartbeat");
+        xRet = xQueueSend(xLogQueue, msg, 0U);
+        if (xRet != pdTRUE) {
+            /* Log queue full — increment error counter or set error flag */
+        } 
     }
 }
 
