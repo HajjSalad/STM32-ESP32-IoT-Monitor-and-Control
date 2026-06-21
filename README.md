@@ -173,53 +173,30 @@ a STM32-initiated transaction, `0x80`–`0xFF` identifies an ESP32-initiated
 transaction, allowing either side to immediately tell who started a given
 exchange just by inspecting the sequence byte.   
 
-![uart](./uart_diagram.png)   
+![uart](./uart_protocol.png)   
 
 ---
 ### ☁️ ESP32 Cloud Gateway
-The ESP32 acts as a cloud gateway - receiving sensor data from the STM32 over UART, managing Wi-Fi connectivity, and publishing to AWS IoT Core over MQTT.
+The ESP32 acts as a cloud gateway — receiving sensor data from the STM32 over a custom UART protocol, managing Wi-Fi connectivity, and publishing telemetry to AWS IoT Core over MQTT/TLS
 
 #### 🧵 Task Model
 | Task | Responsibility |
 |---|---|
-| `uart_rxtx_task` | Receives sensor data from STM32 over UART2, handles ACK/READY protocol |
-| `wifi_manager_task` | Initializes Wi-Fi, connects to AP, monitors and reconnects on dropout |
-| `cloud_mqtt_task` | Connects to AWS IoT Core, drains `sensor_queue`, publishes JSON payloads |
+| `uart_router_task` | Drains UART2 `uart_2_queue`, frames/validates packets, routes by type |
+| `uart_tx_task` | Blocks on `tx_queue`, sends packets to STM32, manages ACK/retry state machine |
+| `uart_rx_task` | Blocks on `rx_queue`, handles incoming packets from STM32, sends ACKs |
+| `wifi_manager_task` | Connects to AP in station mode, monitors connection, reconnects on drop |
+| `cloud_mqtt_task` | Connects to AWS IoT Core over TLS, publishes telemetry, subscribes to OTA job topics |
+| `ota_task` | Waits for job notification, parses job document, downloads + flashes new firmware |
 
 #### 🔗 FreeRTOS Resources
 | Resource | Type | Purpose |
 |---|---|---|
-| `uart2_queue` | Queue | UART driver event queue: triggers `uart_rxtx_task` on incoming data |
-| `sensor_queue` | Queue | Passes `sensor_data_t` from `uart_rxtx_task` → `cloud_mqtt_task` |
-| `wifi_event_group` | Event Group | Signals Wi-Fi connection status `WIFI_CONNECTED_BIT` |
-| `mqtt_event_group` | Event Group | Signals MQTT connection status `MQTT_CONNECTED_BIT` |
-
-#### 🔀 Data Flow
-```
-┌──────────────┐     ┌───────────────┐     ┌─────────────────┐     ┌──────────────┐
-│ STM32 (UART2)│────▶│ uart_rxtx_task│────▶│ cloud_mqtt_task │────▶│ AWS IoT Core │
-└──────────────┘     └───────────────┘     └─────────────────┘     └──────────────┘
-```
-
-#### 📡 Wi-Fi & MQTT Connection Lifecycle
-```
-wifi_init()  ──▶  wifi_start()  ──▶  WIFI_EVENT_STA_CONNECTED
-                                               │
-                                               ▼
-                                      IP_EVENT_STA_GOT_IP
-                                               │
-                                               ▼
-                                     WIFI_CONNECTED_BIT set
-                                               │
-                                               ▼
-                                         mqtt_init()  ──▶  TLS Handshake  ──▶  AWS IoT Core
-                                               │
-                                               ▼
-                                     MQTT_CONNECTED_BIT set
-                                               │
-                                               ▼
-                                        publish loop
-```
+| `uart_2_queue` | Queue | UART driver event queue - triggers `uart_router_task` on incoming data |
+| `tx_queue` | Queue | Passes outgoing packets to `uart_tx_task` |
+| `rx_queue` | Queue | Passes incoming packets from `uart_router_task` -> `uart_rx_task` |
+| `wifi_event_group` | Event Group | Signals Wi-Fi connection status - `WIFI_CONNECTED_BIT` |
+| `mqtt_event_group` | Event Group | Signals MQTT connection status - `MQTT_CONNECTED_BIT` |
 
 ---
 #### ⚙️ Hardware Connection & Sensor Wiring
@@ -246,70 +223,108 @@ wifi_init()  ──▶  wifi_start()  ──▶  WIFI_EVENT_STA_CONNECTED
 ├── 📁 STM32_Sensor_Node/                        # STM32 Sensor Node Firmware
 │   ├── 📁 Src/                                  # Source files
 │   │   ├── 📄 main.c                            # Main entry point, FreeRTOS scheduler
-│   │   ├── 📄 syscalls.c                        # System call stubs for HAL/RTOS
-│   │   ├── 📄 uart.c                            # UART driver implementation
-│   │   ├── 📁 core/                             # Core device classes
-│   │   │   ├── 📄 devices.cpp                   # Device management
-│   │   │   ├── 📄 rooms.cpp                     # Room abstraction classes
-│   │   │   ├── 📄 sensors.cpp                   # Sensor base classes
-│   │   │   └── 📄 wrapper.cpp                   # C-compatible interfaces
-│   │   └── 📁 tasks/                            # FreeRTOS tasks
-│   │       ├── 📄 task_controller.c             # Main control task
-│   │       ├── 📄 task_logger.c                 # Data logging task
-│   │       ├── 📄 task_sensor_read.c            # Sensor read task
-│   │       ├── 📄 task_sensor_write.c           # Sensor write task
-│   │       └── 📄 task_transmit.c               # Data transmission task
+│   │   ├── 📄 syscalls.c                        # System call stubs for newlib
+│   │   │
+│   │   ├── 📁 comm/                             # Communication peripheral drivers
+│   │   │   ├── 📄 uart1_driver.c                # UART1 - ESP32 communication
+│   │   │   ├── 📄 uart2_driver.c                # UART2 - debug logging
+│   │   │   ├── 📄 i2c1_driver.c                 # I2C - TMP102 temperature sensor
+│   │   │   └── 📄 exti_driver.c                 # EXTI - PIR motion sensor interrupt
+│   │   │
+│   │   ├── 📁 sensors/                          # Sensor-specific read logic
+│   │   │   ├── 📄 tmp102_temp_sensor.c          # TMP102 read + conversion
+│   │   │   └── 📄 button_motion_sensor.c        # PIR motion flag handling
+│   │   │
+│   │   ├── 📁 system/                           # System-level peripheral drivers
+│   │   │   ├── 📄 rtc_driver.c                  # RTC - BCD time/date, LSI clock
+│   │   │   └── 📄 iwdg_driver.c                 # IWDG - independent watchdog
+│   │   │
+│   │   ├── 📁 core/                             # C++ object model
+│   │   │   ├── 📄 devices.cpp                   # Device base
+│   │   │   ├── 📄 rooms.cpp                     # Room composition class
+│   │   │   ├── 📄 sensors.cpp                   # Sensor base + Temp/Motion classes
+│   │   │   └── 📄 wrapper.cpp                   # extern "C" bridge to FreeRTOS tasks
+│   │   │
+│   │   ├── 📁 tasks/                            # FreeRTOS tasks
+│   │   │   ├── 📄 task_1_sensor_sample.c        # Samples sensors, writes to Room object
+│   │   │   ├── 📄 task_2_sensor_read.c          # Reads Room object, posts to sensor queue
+│   │   │   ├── 📄 task_3_controller.c           # Control logic, drives actuators
+│   │   │   ├── 📄 task_4_uart_tx.c              # UART TX state machine
+│   │   │   ├── 📄 task_5_uart_router.c          # Frames packets, routes TX/RX
+│   │   │   ├── 📄 task_6_uart_rx.c              # Handles incoming commands, sends ACKs
+│   │   │   ├── 📄 task_7_logger.c               # Drains log queue to UART2
+│   │   │   └── 📄 task_8_watchdog.c             # Checks alive flags, kicks IWDG
+│   │   │
+│   │   └── 📁 utils/                            # Shared utilities
+│   │       └── 📄 crc_16.c                      # CRC16-CCITT implementation
 │   │
 │   ├── 📁 Inc/                                   # Header files
 │   │   ├── 📁 CMSIS/                             # Cortex-M core headers
-│   │   ├── 📁 core/                              # Core class headers
+│   │   ├── 📁 STM32F4xx/                         # Device register headers
+│   │   ├── 📁 comm/                              # Communication driver headers
+│   │   ├── 📁 sensors/                           # Sensor driver headers
+│   │   ├── 📁 system/                            # RTC/IWDG headers
+│   │   ├── 📁 core/                              # C++ object model headers
 │   │   ├── 📁 tasks/                             # Task headers
-│   │   ├── 📄 shared_resources.h                 # Shared variables and defines
-│   │   └── 📄 uart.h                             # UART interface definitions
+│   │   ├── 📁 utils/                             # CRC header
+│   │   └── 📄 shared_resources.h                 # Shared queues, mutexes, structs
 │   │
-│   ├── 📁 FreeRTOS/                              # FreeRTOS kernel source and config
-│   ├── 📁 Build/                                 # Build output folder
-│   ├── 📁 Startup/                               # Startup code and vector table
-│   ├── 📄 Makefile                               # Build rules
-│   ├── 📄 STM32F446RETX_FLASH.ld                 # Flash linker script
-│   └── 📄 STM32F446RETX_RAM.ld                   # RAM linker script         
-│                      
+│   ├── 📁 Tests/                                  # Unit tests (host-compiled)
+│   ├── 📁 FreeRTOS/                               # FreeRTOS kernel source and config
+│   ├── 📁 Build/                                  # Build output folder
+│   ├── 📁 Startup/                                # Startup code and vector table
+│   ├── 📄 Makefile                                # Build rules
+│   ├── 📄 STM32F446RETX_FLASH.ld                  # Flash linker script
+│   └── 📄 STM32F446RETX_RAM.ld                    # RAM linker script
 ```
-#### 📂 STM32 Code Structure
+#### 📂 ESP32 Code Structure
 ```
 ├── 📁 ESP32_Cloud_Gateway/                 # ESP32 Gateway Firmware
-│   ├── 📁 main/                            # Core FreeRTOS tasks and entry point
-│   │   ├── 📄 main.c                       # Main program, FreeRTOS scheduler and tasks
-│   │   ├── 📄 CMakeLists.txt               # Build configuration for main folder
-│   │   └── 📁 include/                     # Public headers for main tasks
-│   │       └── 📄 task_priorities.h        # Task priority definitions
+│   ├── 📁 main/                            # Entry point
+│   │   ├── 📄 main.c                       # app_main - system init, creates all component tasks
+│   │   └── 📄 CMakeLists.txt               # Build configuration for main folder
 │   │
 │   ├── 📁 components/                      # Modular firmware components
-│   │   ├── 📁 mqtt/                        # MQTT communication module
-│   │   │   ├── 📄 CMakeLists.txt           # Build configuration for MQTT component
-│   │   │   ├── 📄 cloud_mqtt_task.c        # FreeRTOS task for MQTT communication
-│   │   │   ├── 📄 mqtt_driver.c            # Core MQTT driver implementation
-│   │   │   ├── 📁 include/                 # MQTT public headers
-│   │   │   │   └── 📄 mqtt.h               # MQTT interface definitions
-│   │   │   └── 📁 certs/                   # Certificates for AWS IoT Core
+│   │   ├── 📁 wifi/                        # Wi-Fi connectivity component
+│   │   │   ├── 📄 CMakeLists.txt
+│   │   │   ├── 📄 wifi_driver.c            # Station mode init, esp_wifi_connect()
+│   │   │   ├── 📄 wifi_manager_task.c      # Connects to AP, monitors and reconnects
+│   │   │   └── 📁 include/
+│   │   │       └── 📄 (wifi headers)       # WIFI_CONNECTED_BIT, event group declarations
 │   │   │
-│   │   ├── 📁 uart/                        # UART communication module
-│   │   │   ├── 📄 CMakeLists.txt           # Build configuration for UART component
-│   │   │   ├── 📄 uart2_driver.c           # UART driver for hardware communication
-│   │   │   ├── 📄 uart_rxtx_task.c         # FreeRTOS task for UART RX/TX
-│   │   │   └── 📁 include/                 # UART public headers
-│   │   │       └── 📄 uart.h               # UART interface definitions
+│   │   ├── 📁 cloud_mqtt/                  # MQTT communication component
+│   │   │   ├── 📄 CMakeLists.txt
+│   │   │   ├── 📄 mqtt_driver.c            # esp-mqtt wrapper - init, publish, subscribe
+│   │   │   ├── 📄 cloud_mqtt_task.c        # TLS connection, publishes telemetry
+│   │   │   ├── 📁 certs/                   # X.509 credentials embedded at compile time
+│   │   │   │   ├── 📄 AmazonRootCA1.pem    # Verifies AWS broker identity
+│   │   │   │   ├── 📄 certificate.pem.crt  # Proves device identity
+│   │   │   │   └── 📄 private.pem.key      # Signs TLS handshake
+│   │   │   └── 📁 include/
+│   │   │       └── 📄 cloud_mqtt.h         # MQTT_CONNECTED_BIT, topic defines
 │   │   │
-│   │   └── 📁 wifi/                        # WiFi connectivity module
-│   │       ├── 📄 CMakeLists.txt           # Build configuration for WiFi component
-│   │       ├── 📄 wifi_driver.c            # Core WiFi driver implementation
-│   │       ├── 📄 wifi_manager_task.c      # FreeRTOS task for WiFi management
-│   │       └── 📁 include/                 # WiFi public headers
-│   │           └── 📄 wifi.h               # WiFi interface definitions
+│   │   ├── 📁 ota_update/                  # OTA firmware update component
+│   │   │   ├── 📄 CMakeLists.txt
+│   │   │   ├── 📄 ota_task.c               # Waits on job notification, publishes status
+│   │   │   ├── 📄 ota_update.c             # esp_https_ota - downloads + flashes firmware
+│   │   │   ├── 📄 json_parser.c            # cJSON - extracts jobId and presigned URL
+│   │   │   └── 📁 include/
+│   │   │       └── 📄 (ota headers)        # JOB_NOTIFICATION_BIT, job_doc_mutex
+│   │   │
+│   │   └── 📁 uart/                        # UART communication component
+│   │       ├── 📄 CMakeLists.txt
+│   │       ├── 📄 uart2_driver.c           # Bare UART2 driver, stream buffer ISR
+│   │       ├── 📄 uart_router_task.c       # Frames/validates packets, routes by type
+│   │       ├── 📄 uart_tx_task.c           # TX state machine - handshake, data, ACK/retry
+│   │       ├── 📄 uart_rx_task.c           # Handles incoming packets, sends ACKs
+│   │       ├── 📄 crc_16.c                 # CRC16-CCITT - shared with STM32 implementation
+│   │       └── 📁 include/
+│   │           ├── 📄 uart_driver.h        # Driver-level declarations
+│   │           ├── 📄 uart_tasks.h         # Task handles, queue declarations
+│   │           ├── 📄 crc_16.h             # CRC function prototypes
+│   │           └── 📄 shared_resources.h   # Shared queues, structs across UART tasks
 │   │
+│   ├── 📁 build/                           # Build output folder
+│   ├── 📄 sdkconfig                        # ESP-IDF project configuration
 │   └── 📄 CMakeLists.txt                   # Top-level build system configuration
 ```
-
-#### Demo
-&nbsp;&nbsp;&nbsp;AWS IoT Core&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;&#8195;Serial Terminal
-![Demo](./png_demo.gif)
