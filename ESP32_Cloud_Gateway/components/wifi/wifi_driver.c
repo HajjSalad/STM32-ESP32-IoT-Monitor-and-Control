@@ -1,5 +1,5 @@
 /**
- * @file wifi_driver.c
+ * @file  wifi_driver.c
  * @brief Wi-Fi driver module for ESP32.
  * 
  * Handles Wi-Fi initialization, connection, status monitoring, 
