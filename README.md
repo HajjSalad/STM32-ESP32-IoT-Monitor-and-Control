@@ -223,13 +223,12 @@ wifi_init()  ──▶  wifi_start()  ──▶  WIFI_EVENT_STA_CONNECTED
 
 ---
 #### ⚙️ Hardware Connection & Sensor Wiring
-
 | STM32 Pin | Interface | ESP32 Pin |
 |---|---|---|
 | PA9 - USART1_TX | UART | GPIO16 - UART2_RX |
 | PA10 - USART1_RX | UART | GPIO17 - UART2_TX |
 | GND | GND | GND |
-```
+
 | STM32 Pin | Interface | TMP102 Pin |
 |---|---|---|
 | PB10 — I2C2_SCL | I2C | SCL |
