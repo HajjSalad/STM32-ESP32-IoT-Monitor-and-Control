@@ -19,7 +19,7 @@ The system is split into three components:
 ### 🟠 STM32 Sensor Node 
 FreeRTOS-based sensor and control firmware running on an STM32F446RE,
 structured around a C++ object model wrapped in a C interface. Models the
-room using a class hierarchy — sensors and actuators are represented as
+room using a class hierarchy - sensors and actuators are represented as
 objects, with an `extern "C"` wrapper layer bridging the C++ object model to
 the C-based FreeRTOS task API. Monitors temperature and motion, drives
 climate and lighting control, and forwards sensor data and device state to an
@@ -71,9 +71,8 @@ New sensor or device types can be added by extending the base classes, and new r
 | `xSensorReadHandle` | Task Handle | Notified by `SensorSample` after writing to `Room` |
 | `xTXTaskHandle` | Task Handle | Notified by `Router` on incoming ACK packets |
 
-#### Peripheral Drivers
-**`UART1` - MODBUS RTU**   
-**`UART1` - ESP32 Communication**
+#### Peripheral Drivers 
+**`UART1` - ESP32 Communication**   
 Bare-metal UART1 driver at 115200 baud. ISR receives bytes one at a time and
 posts them into `xUartStreamBuffer` via `xStreamBufferSendFromISR`. Trigger
 level of 8 bytes wakes `vTaskRouter`, which drains the buffer in chunks of 32
@@ -88,7 +87,7 @@ Dedicated UART for terminal debug output. `vTaskLogger` is the sole writer - dra
 PA2 - TX (AF7)
 PA3 - RX (AF7)
 ```
-**`I2C2` - TMP102 Temperature Sensor**
+**`I2C2` - TMP102 Temperature Sensor**   
 Bare-metal I2C2 master driver at 100kHz standard mode. `vTaskSensorSample`
 issues a read transaction each sample cycle and writes the result into the
 `Room` object's `TemperatureSensor` via the C++ wrapper layer.
@@ -97,21 +96,21 @@ PB10 - SCL
 PB11 - SDA
 Address: 0x48
 ```
-**`GPIO Input` - PIR Motion Sensor**    
+**`GPIO Input` - PIR Motion Sensor**      
 PB12 configured as digital input with internal pull-up resistor. EXTI12
 interrupt on falling edge. Falling edge sets a `volatile` motion flag inside
 the ISR; `vTaskSensorSample` reads and clears it each cycle alongside the
-temperature sensor — no polling required.
+temperature sensor - no polling required.
 ```
 PB12 - EXTI12
 pull-up, falling edge
 ```
-**`RTC` - Sampling Clock**
+**`RTC` - Sampling Clock**   
 Independent BCD timer/counter clocked by the internal LSI oscillator (32kHz).
 Provides accurate timestamps for each sensor sample. Currently used for
 timestamping.
-**`IWDG` - Independent Watchdog**    
-Hardware watchdog clocked by internal LSI oscillator (32kHz) — independent of system clock, cannot be disabled once started. `vTaskWatchdogMonitor` (Pri 7, highest) verifies all four tasks set their alive flags each cycle before kicking. If any task hangs and fails to set its flag — kick is withheld and MCU resets after timeout.
+**`IWDG` - Independent Watchdog**       
+Hardware watchdog clocked by internal LSI oscillator (32kHz) - independent of system clock, cannot be disabled once started. `vTaskWatchdogMonitor` (Pri 7, highest) verifies all four tasks set their alive flags each cycle before kicking. If any task hangs and fails to set its flag - kick is withheld and MCU resets after timeout.
 ```
 Prescaler  = /256  (PR = 6)
 Reload     = 1250  (RLR)
@@ -137,15 +136,15 @@ Stage 5 - full-duplex, QoS levels, HAL layer  <- target
 ```
 | Field | Size | Description |
 |---|---|---|
-| `SOF` | 1 byte | Start of frame — fixed `0xAA` |
+| `SOF` | 1 byte | Start of frame - fixed `0xAA` |
 | `VER` | 1 byte | Protocol version |
 | `DEV_ID` | 1 byte | Sender device ID (STM32 / ESP32) |
-| `SEQ` | 1 byte | Sequence number, 7-bit (`0x00`–`0x7F`) |
-| `TYPE` | 1 byte | Packet type — see table below |
+| `SEQ` | 1 byte | Sequence number, 7-bit (`0x00`-`0x7F`) |
+| `TYPE` | 1 byte | Packet type - see table below |
 | `LEN` | 1 byte | Payload length (data packets only) |
 | `PAYLOAD` | variable | Packet-specific data |
-| `CRC16_H/L` | 2 bytes | CRC16-CCITT over header + payload |
-| `EOF` | 1 byte | End of frame — fixed `0x55` |
+| `CRC16_H/L` | 2 bytes | CRC16 over header + payload |
+| `EOF` | 1 byte | End of frame - fixed `0x55` |
 #### 🗳️ Packet Types
 | Direction | Type | Purpose |
 |---|---|---|
@@ -172,8 +171,10 @@ SEQ_ESP32_BASE  0x80   // ESP32-originated: 0x80, 0x81, 0x82 ... 0xFF
 The high bit of `SEQ` doubles as an origin marker — `0x00`–`0x7F` identifies
 a STM32-initiated transaction, `0x80`–`0xFF` identifies an ESP32-initiated
 transaction, allowing either side to immediately tell who started a given
-exchange just by inspecting the sequence byte.
-![uart](./uart_diagram.png)
+exchange just by inspecting the sequence byte.   
+
+![uart](./uart_diagram.png)   
+
 ---
 ### ☁️ ESP32 Cloud Gateway
 The ESP32 acts as a cloud gateway - receiving sensor data from the STM32 over UART, managing Wi-Fi connectivity, and publishing to AWS IoT Core over MQTT.
