@@ -71,7 +71,7 @@ New sensor or device types can be added by extending the base classes, and new r
 | `xSensorReadHandle` | Task Handle | Notified by `SensorSample` after writing to `Room` |
 | `xTXTaskHandle` | Task Handle | Notified by `Router` on incoming ACK packets |
 
-#### Peripheral Drivers 
+#### 📡 Peripheral Drivers 
 **`UART1` - ESP32 Communication**   
 Bare-metal UART1 driver at 115200 baud. ISR receives bytes one at a time and
 posts them into `xUartStreamBuffer` via `xStreamBufferSendFromISR`. Trigger
@@ -108,7 +108,7 @@ pull-up, falling edge
 **`RTC` - Sampling Clock**   
 Independent BCD timer/counter clocked by the internal LSI oscillator (32kHz).
 Provides accurate timestamps for each sensor sample. Currently used for
-timestamping.
+timestamping.   
 **`IWDG` - Independent Watchdog**       
 Hardware watchdog clocked by internal LSI oscillator (32kHz) - independent of system clock, cannot be disabled once started. `vTaskWatchdogMonitor` (Pri 7, highest) verifies all four tasks set their alive flags each cycle before kicking. If any task hangs and fails to set its flag - kick is withheld and MCU resets after timeout.
 ```
@@ -168,7 +168,7 @@ generate sequence numbers independently without collision:
 SEQ_STM32_BASE  0x00   // STM32-originated: 0x00, 0x01, 0x02 ... 0x7F
 SEQ_ESP32_BASE  0x80   // ESP32-originated: 0x80, 0x81, 0x82 ... 0xFF
 ```
-The high bit of `SEQ` doubles as an origin marker — `0x00`–`0x7F` identifies
+The high bit of `SEQ` doubles as an origin marker - `0x00`–`0x7F` identifies
 a STM32-initiated transaction, `0x80`–`0xFF` identifies an ESP32-initiated
 transaction, allowing either side to immediately tell who started a given
 exchange just by inspecting the sequence byte.   
