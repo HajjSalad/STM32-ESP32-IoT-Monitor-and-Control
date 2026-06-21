@@ -14,6 +14,7 @@ STM32_Sensor_Node/Build/
 *.log
 
 # Ignore editor-specific files
+/ESP32_Cloud_Gateway/sdkconfig
 *.swp
 .vscode/
 .idea/

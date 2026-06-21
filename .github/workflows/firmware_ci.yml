@@ -1,3 +1,4 @@
+# Automate multi-target build on every commit
 name: Firmware CI
 
 # Trigger conditions
@@ -11,7 +12,7 @@ on:
 jobs:
   # ────────────────────────────────────────
   # Job 1: Build STM32 firmware
-  # Compile the STM32 sensor node firmware
+  # Compile the STM32 Sensor Node firmware
   # ────────────────────────────────────────
   build-stm32:
     runs-on: self-hosted
@@ -27,7 +28,7 @@ jobs:
 
   # ────────────────────────────────────────
   # Job 2: Build ESP32 firmware
-  # Compile the ESP32 gateway firmware
+  # Compile the ESP32 Gateway firmware
   # ────────────────────────────────────────
   build-esp32:
     runs-on: self-hosted
