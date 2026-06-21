@@ -105,10 +105,6 @@ temperature sensor - no polling required.
 PB12 - EXTI12
 pull-up, falling edge
 ```
-**`RTC` - Sampling Clock**   
-Independent BCD timer/counter clocked by the internal LSI oscillator (32kHz).
-Provides accurate timestamps for each sensor sample. Currently used for
-timestamping.   
 **`IWDG` - Independent Watchdog**       
 Hardware watchdog clocked by internal LSI oscillator (32kHz) - independent of system clock, cannot be disabled once started. `vTaskWatchdogMonitor` (Pri 7, highest) verifies all four tasks set their alive flags each cycle before kicking. If any task hangs and fails to set its flag - kick is withheld and MCU resets after timeout.
 ```
@@ -116,6 +112,10 @@ Prescaler  = /256  (PR = 6)
 Reload     = 1250  (RLR)
 Timeout    = (256 × 1250) / 32000 = 10 seconds
 ```
+**`RTC` - Sampling Clock**   
+Independent BCD timer/counter clocked by the internal LSI oscillator (32kHz).
+Provides accurate timestamps for each sensor sample. Currently used for
+timestamping.   
 
 ---
 ### 🔵 **UART Transport Protocol**
