@@ -229,21 +229,16 @@ wifi_init()  ──▶  wifi_start()  ──▶  WIFI_EVENT_STA_CONNECTED
 |    PA10 - USART1_RX   |      UART        |     GPIO17 - UART2_TX     |  
 |        GND            |      GND         |           GND             |
 
-| STM32 Pin | Interface | ESP32 Pin |
-| PA9 - USART1_TX | UART | GPIO16 - UART2_RX |
-| PA10 - USART1_RX | UART | GPIO17 - UART2_TX |
-| GND | GND | GND |
+|     STM32 Pin         |    Interface     |     TMP102 Pin            |
+|   PB10 - I2C2_SCL     |       I2C        |        SCL                |
+|   PB11 - I2C2_SDA     |       I2C        |        SDA                |
+|        3.3V           |      Power       |        VCC                |
+|        GND            |       GND        |        GND                |
 
-| STM32 Pin | Interface | TMP102 Pin |
-| PB10 — I2C2_SCL | I2C | SCL |
-| PB11 — I2C2_SDA | I2C | SDA |
-| 3.3V | Power | VCC |
-| GND | GND | GND |
-
-| STM32 Pin | Interface | PIR Sensor Pin |
-| PB12 — EXTI12 | GPIO Input | OUT |
-| 3.3V | Power | VCC |
-| GND | GND | GND |
+|       STM32 Pin       |    Interface     |      PIR Sensor Pin       |
+|   PB12 - EXTI12       |    GPIO Input    |         OUT               |
+|        3.3V           |      Power       |         VCC               |
+|        GND            |       GND        |         GND               |
 ```
 
 #### 📂 STM32 Code Structure
