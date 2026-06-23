@@ -25,6 +25,90 @@ the C-based FreeRTOS task API. Monitors temperature and motion, drives
 climate and lighting control, and forwards sensor data and device state to an
 ESP32 gateway over a custom UART protocol.
 
+#### 💾 `STM32F446RE` Memory Layout
+| Memory | Size | Address | Content |
+|---|---|---|---|
+| Flash | 512 KB | 0x08000000 | Code, constants, initialized data values |
+| SRAM | 128 KB | 0x20000000 | Runtime data, FreeRTOS heap, stack |
+
+#### Heap Configuration
+Selected via the Makefile build system - only one heap implementation can be linked at a time:  
+```
+FreeRTOS/Source/portable/MemMang/heap_4.c
+```
+`heap_4.c` allocates/frees and coalesces adjacent free blocks, reducing fragmentation over long uptime - the standard choice for most embedded projects with dynamic FreeRTOS object creation.   
+
+Heap size set in `FreeRTOSConfig.h`:
+```
+#define configTOTAL_HEAP_SIZE    ( ( size_t ) ( 55000 ) )
+```
+
+#### Heap Usage at Runtime
+Printed at startup via `xPortGetFreeHeapSize()`:
+| Metric | Value |
+|---|---|
+| FreeRTOS heap total | |
+| FreeRTOS heap consumed | |
+| FreeRTOS heap remaining | |
+
+#### Binary Size
+```
+arm-none-eabi-size Build/STM32_Sensor_Node.elf
+  text    data     bss     dec     hex
+  33656     460   58848   92964   16b24
+```
+| Section | Size | Stored In | Notes |
+|---|---|---|---|
+| `.text` | | Flash | Firmware code + FreeRTOS source |
+| `.data` | | Flash + SRAM | Initial values in flash, copied to SRAM at boot |
+| `.bss` | | SRAM | Includes FreeRTOS `ucHeap[55000]` |
+
+| | Used | Total | % |
+|---|---|---|---|
+| Flash | | 512 KB | |
+| SRAM | | 128 KB | |
+
+#### Task Stacks
+| Task | Stack (words) | Stack (bytes) | Why |
+|---|---|---|---|
+| `vTaskSensorSample` | | | |
+| `vTaskSensorRead` | | | |
+| `vTaskController` | | | |
+| `vTaskRouter` | | | |
+| `vTaskTX` | | | |
+| `vTaskRX` | | | |
+| `vTaskLogger` | | | |
+| `vTaskWatchdogMonitor` | | | |
+| **Total** | | | |
+
+#### Per-task Stack High Water Mark
+```
+UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
+```
+| Task | Allocated (words) | HWM Remaining (words) | Used (words) |
+|---|---|---|---|
+| `vTaskSensorSample` | | | |
+| `vTaskSensorRead` | | | |
+| `vTaskController` | | | |
+| `vTaskRouter` | | | |
+| `vTaskTX` | | | |
+| `vTaskRX` | | | |
+| `vTaskLogger` | | | |
+| `vTaskWatchdogMonitor` | | | |
+
+#### FreeRTOS Objects
+| Object | Count × Size | Total |
+|---|---|---|
+| Task Control Blocks | 8 × ~88 bytes | |
+| `xSensorQueue` | | |
+| `xTXQueue` | | |
+| `xRXQueue` | | |
+| `xLogQueue` | | |
+| `xSensorMutex` | | |
+| `xUartStreamBuffer` | | |
+| `xSampleTimer` | | |
+| **Approximate total consumed** | | |
+
 #### 🔬 Sensor Stack
 | Sensor | Measurement | Interface | Status |
 |---|---|---|---|
