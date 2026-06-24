@@ -121,7 +121,7 @@ int main(void)
                                 pdTRUE, NULL, vSampleTimerCallback);        // callback function
     xTimerStart(xSampleTimer, 0);                                           // start timer
 
-    LOG("Tasks created. Free heap: %u bytes", xPortGetFreeHeapSize());
+    LOG("All FreeRTOS objects created. Free heap: %u bytes", xPortGetFreeHeapSize());
     LOG("Starting scheduler...");
 
     vTaskStartScheduler();  
