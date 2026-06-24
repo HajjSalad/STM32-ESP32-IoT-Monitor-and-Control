@@ -1,8 +1,28 @@
 ## 🌐 IoT Monitor and Control
 ## Table of Contents
 - [Overview](#overview)
-- [STM32 Sensor Node](#-stm32-sensor-node)
-- [STM32 Memory Layout](#-stm32f446re-memory-layout)
+- [🟠 STM32 Sensor Node](#-stm32-sensor-node)
+  - [💾 STM32F446RE Memory Layout](#-stm32f446re-memory-layout)
+  - [Heap Configuration](#heap-configuration)
+  - [Heap Usage at Runtime](#heap-usage-at-runtime)
+  - [Binary Size](#binary-size)
+  - [Task Stacks](#task-stacks)
+  - [FreeRTOS Objects](#freertos-objects)
+  - [🔬 Sensor Stack](#-sensor-stack)
+  - [🧱 Object Model](#-object-model)
+  - [🧵 FreeRTOS Task Pipeline](#-freertos-task-pipeline)
+  - [🔗 FreeRTOS Resources](#-freertos-resources)
+  - [📡 Peripheral Drivers](#-peripheral-drivers)
+- [🔵 UART Transport Protocol](#-uart-transport-protocol)
+  - [📦 Packet Structure](#-packet-structure)
+  - [🗳️ Packet Types](#️-packet-types)
+  - [📜 Transaction](#-transaction)
+- [☁️ ESP32 Cloud Gateway](#️-esp32-cloud-gateway)
+  - [🧵 Task Model](#-task-model)
+  - [🔗 FreeRTOS Resources](#-freertos-resources-1)
+- [⚙️ Hardware Connection & Sensor Wiring](#️-hardware-connection--sensor-wiring)
+- [📂 STM32 Code Structure](#-stm32-code-structure)
+- [📂 ESP32 Code Structure](#-esp32-code-structure)
 
 #### Overview
 A two-MCU embedded IoT system that monitors temperature and motion in a room,
