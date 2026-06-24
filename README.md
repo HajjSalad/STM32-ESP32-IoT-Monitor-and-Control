@@ -1,13 +1,10 @@
 ## 🌐 IoT Monitor and Control
 ## Table of Contents
+## Table of Contents
 - [Overview](#overview)
 - [🟠 STM32 Sensor Node](#-stm32-sensor-node)
-  - [💾 STM32F446RE Memory Layout](#-stm32f446re-memory-layout)
-  - [Heap Configuration](#heap-configuration)
-  - [Heap Usage at Runtime](#heap-usage-at-runtime)
-  - [Binary Size](#binary-size)
-  - [Task Stacks](#task-stacks)
-  - [FreeRTOS Objects](#freertos-objects)
+  - [💾 Memory Footprint - STM32F446RE](#-memory-footprint---stm32f446re)
+    - [Task Stacks](#task-stacks)
   - [🔬 Sensor Stack](#-sensor-stack)
   - [🧱 Object Model](#-object-model)
   - [🧵 FreeRTOS Task Pipeline](#-freertos-task-pipeline)
@@ -17,7 +14,7 @@
   - [📦 Packet Structure](#-packet-structure)
   - [🗳️ Packet Types](#️-packet-types)
   - [📜 Transaction](#-transaction)
-- [☁️ ESP32 Cloud Gateway](#️-esp32-cloud-gateway)
+- [🔴 ESP32 Cloud Gateway](#-esp32-cloud-gateway)
   - [🧵 Task Model](#-task-model)
   - [🔗 FreeRTOS Resources](#-freertos-resources-1)
 - [⚙️ Hardware Connection & Sensor Wiring](#️-hardware-connection--sensor-wiring)
@@ -50,13 +47,13 @@ the C-based FreeRTOS task API. Monitors temperature and motion, drives
 climate and lighting control, and forwards sensor data and device state to an
 ESP32 gateway over a custom UART protocol.
 
-#### 💾 `STM32F446RE` Memory Layout
+#### 💾 Memory Footprint - STM32F446RE
 | Memory | Size | Address | Content |
 |---|---|---|---|
 | Flash | 512 KB | 0x08000000 | Code, constants, initialized data values |
 | SRAM | 128 KB | 0x20000000 | Runtime data, FreeRTOS heap, stack |
 
-#### Heap Configuration
+**Heap Configuration**
 Selected `heap_4.c` for the heap allocation strategy - only one heap implementation can be linked at a time:  
 ```
 FreeRTOS/Source/portable/MemMang/heap_4.c
@@ -68,7 +65,7 @@ Heap size set in `FreeRTOSConfig.h`:
 #define configTOTAL_HEAP_SIZE    ( ( size_t ) ( 55000 ) )
 ```
 
-#### Heap Usage at Runtime
+**Heap Usage at Runtime**
 Printed at startup via `xPortGetFreeHeapSize()`:
 | Metric | Value |
 |---|---|
@@ -76,7 +73,7 @@ Printed at startup via `xPortGetFreeHeapSize()`:
 | FreeRTOS heap remaining | 3,928 bytes |
 | FreeRTOS heap consumed | 51,072 |
 
-#### Binary Size
+**Binary Size**  
 ```
 arm-none-eabi-size Build/STM32_Sensor_Node.elf
   text    data     bss     dec     hex
@@ -104,7 +101,7 @@ SRAM free:
 | Flash | 24,392 | 512 KB | 4.65 |
 | SRAM | 57,776 | 128 KB | 44.08 |
 
-#### Task Stacks
+##### Task Stacks
 ```
 UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
 ```
@@ -120,7 +117,7 @@ UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
 | `vTaskWatchdogMonitor` | 512 | 2,048 | 9 | | | |
 | **Total** | **11,264** | **45,056** | | | | |
 
-#### FreeRTOS Objects
+**FreeRTOS Objects**  
 | Object | Count × Size | Total |
 |---|---|---|
 | Task Control Blocks | 8 × ~88 bytes | |
@@ -284,7 +281,7 @@ exchange just by inspecting the sequence byte.
 ![uart](./uart_protocol.png)   
 
 ---
-### ☁️ ESP32 Cloud Gateway
+### 🔴 ESP32 Cloud Gateway
 The ESP32 acts as a cloud gateway — receiving sensor data from the STM32 over a custom UART protocol, managing Wi-Fi connectivity, and publishing telemetry to AWS IoT Core over MQTT/TLS
 
 #### 🧵 Task Model
