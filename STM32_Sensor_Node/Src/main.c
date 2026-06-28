@@ -63,9 +63,14 @@ int main(void)
 
     LOG("*** STM32 Sensor Node Starting ***");
 
-    // Create synchronization primitives
+    // Create and measure synchronization primitives
+    size_t before, after;
+
+    before = xPortGetFreeHeapSize();
     xSensorMutex = xSemaphoreCreateMutex();
     configASSERT(xSensorMutex != NULL);
+    after = xPortGetFreeHeapSize();
+    LOG("xSensorMutex cost: %u bytes", before - after);
 
     xUartStreamBuffer = xStreamBufferCreate(256, 8);
     configASSERT(xUartStreamBuffer != NULL);
@@ -116,10 +121,15 @@ int main(void)
     xRet = xTaskCreate(vTaskWatchdogMonitor, "WatchdogMonitor", 512, NULL, 9, NULL);
     configASSERT(xRet == pdPASS);
 
-    // Software timer to trigger vTaskSensor Sample
-    xSampleTimer = xTimerCreate("SampleTimer", pdMS_TO_TICKS(5000),         // 5 second period
-                                pdTRUE, NULL, vSampleTimerCallback);        // callback function
-    xTimerStart(xSampleTimer, 0);                                           // start timer
+    // Software timer to trigger vTaskSensorSample
+    xSampleTimer = xTimerCreate(
+        "SampleTimer",               // timer name
+        pdMS_TO_TICKS(5000),         // timer period
+        pdTRUE,                      // uxAutoReload — pdTRUE = repeating, pdFALSE = one-shot
+        NULL,                        // timer ID — optional 
+        vSampleTimerCallback         // callback function — called on every expiry
+    );
+    xTimerStart(xSampleTimer, 0);    // xTicksToWait   — block time if timer command queue is full
 
     LOG("All FreeRTOS objects created. Free heap: %u bytes", xPortGetFreeHeapSize());
     LOG("Starting scheduler...");

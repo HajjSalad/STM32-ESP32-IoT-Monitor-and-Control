@@ -36,10 +36,10 @@ void vTaskLogger(void *pvParameters)
             printf("%s\n\r", msg);
         }
 
-        // if (tick_count++ % 100 == 0) {
-        //     UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
-        //     LOG("Logger stack watermark: %u words remaining", watermark);
-        // }
+        if (tick_count++ % 100 == 0) {
+            UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
+            LOG("Logger stack watermark: %u words remaining", watermark);
+        }
 
         // // Set alive flag
         // if (msg_count % 100 == 0) {

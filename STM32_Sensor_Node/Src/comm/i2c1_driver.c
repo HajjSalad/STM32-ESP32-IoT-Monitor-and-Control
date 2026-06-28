@@ -71,12 +71,12 @@ void i2c1_init(void)
 */
 void i2c1_start(uint8_t address, uint8_t direction)
 {
-    printf("In I2C_Start Driver\n");
+    //printf("In I2C_Start Driver\n");
     // 1. Generate start condition
     I2C1->CR1 |= I2C_CR1_START;
     while(!(I2C1->SR1 & I2C_SR1_SB));       // Wait until start bit is set
 
-    printf("I2C Start condition okay\n");
+    //printf("I2C Start condition okay\n");
 
     // 2. Send slave address and direction bit
     I2C1->DR = (address << 1) | direction;

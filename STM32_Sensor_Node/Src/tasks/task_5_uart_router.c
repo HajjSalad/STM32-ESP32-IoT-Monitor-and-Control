@@ -216,13 +216,18 @@ void vTaskRouter(void *pvParameters)
             }
         }
 
+        if (tick_count++ % 100 == 0) {
+            UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
+            LOG("UART_Router stack watermark: %u words remaining", watermark);
+        }
+
         // Set alive flag
         task5_alive = 1;
-        // snprintf(msg, sizeof(msg), "[T5] Sent alive heartbeat");
-        // xRet = xQueueSend(xLogQueue, msg, 0U);
-        // if (xRet != pdTRUE) {
-        //     /* Log queue full — increment error counter or set error flag */
-        // }
+        snprintf(msg, sizeof(msg), "[T5] Sent alive heartbeat");
+        xRet = xQueueSend(xLogQueue, msg, 0U);
+        if (xRet != pdTRUE) {
+            /* Log queue full — increment error counter or set error flag */
+        }
 
         // while (rxHead != rxTail) 
         // {

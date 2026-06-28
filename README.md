@@ -1,6 +1,5 @@
 ## 🌐 IoT Monitor and Control
-## Table of Contents
-## Table of Contents
+### Table of Contents
 - [Overview](#overview)
 - [🟠 STM32 Sensor Node](#-stm32-sensor-node)
   - [💾 Memory Footprint - STM32F446RE](#-memory-footprint---stm32f446re)
@@ -21,7 +20,7 @@
 - [📂 STM32 Code Structure](#-stm32-code-structure)
 - [📂 ESP32 Code Structure](#-esp32-code-structure)
 
-#### Overview
+### Overview
 A two-MCU embedded IoT system that monitors temperature and motion in a room,
 drives climate and lighting control, and publishes telemetry to AWS IoT Core.
 An STM32F446RE runs the sensor and control logic via FreeRTOS, forwarding data
@@ -34,7 +33,7 @@ The system is split into three components:
 - **🔵 UART Transport Protocol** - custom binary packet protocol with state machines, CRC and ACK/retry
 - **🔴 ESP32 Cloud Gateway** - Wi-Fi, MQTT/TLS publishing, OTA firmware updates       
 
-📓 Design notes, dev journal, and setup guides (STM32 & ESP32 project creation, design decisions) are documented in the [Project Notion Page](https://hajjsalad.notion.site/iot-monitor-control)   
+📓 Design notes, dev journal, and setup guides (STM32 & ESP32 project creation, design decisions) are documented in the [Project Notion Page](https://www.hajj.dev/iot-monitor-control)   
 
 ![overview](./project_diagram.png)
 ---
@@ -53,7 +52,7 @@ ESP32 gateway over a custom UART protocol.
 | Flash | 512 KB | 0x08000000 | Code, constants, initialized data values |
 | SRAM | 128 KB | 0x20000000 | Runtime data, FreeRTOS heap, stack |
 
-**Heap Configuration**
+**Heap Configuration**     
 Selected `heap_4.c` for the heap allocation strategy - only one heap implementation can be linked at a time:  
 ```
 FreeRTOS/Source/portable/MemMang/heap_4.c
@@ -65,15 +64,15 @@ Heap size set in `FreeRTOSConfig.h`:
 #define configTOTAL_HEAP_SIZE    ( ( size_t ) ( 55000 ) )
 ```
 
-**Heap Usage at Runtime**
+**Heap Usage at Runtime**    
 Printed at startup via `xPortGetFreeHeapSize()`:
 | Metric | Value |
 |---|---|
-| FreeRTOS heap total | 55,000 |
+| FreeRTOS heap total | 55,000 bytes |
 | FreeRTOS heap remaining | 3,928 bytes |
-| FreeRTOS heap consumed | 51,072 |
+| FreeRTOS heap consumed | 51,072 bytes |
 
-**Binary Size**  
+**Binary Size**    
 ```
 arm-none-eabi-size Build/STM32_Sensor_Node.elf
   text    data     bss     dec     hex
@@ -86,36 +85,51 @@ arm-none-eabi-size Build/STM32_Sensor_Node.elf
 | `.bss` | 57,680 | SRAM | Includes FreeRTOS `ucHeap[55000]` + other uninitialized globals |
 
 ```
-Flash used:   
-text + data = 24,296 + 96 = 24,392 bytes   
-24,392 / (512 × 1024) = 24,392 / 524,288 = 4.65%
-SRAM used:
-data + bss = 96 + 57,680 = 57,776 bytes
-57,776 / (128 × 1024) = 57,776 / 131,072 = 44.08%
-SRAM free:
-128 KB -> 128 × 1024 = 131,072 bytes
-131,072 - 57,776 = 73,296 bytes ≈ 71.6 KB
+Flash:
+Total: 512 × 1024 = 524,288 bytes
+Used: text + data = 24,296 + 96 = 24,392 bytes 
+Percent used: 24,392 / 524,288 = 4.65% 
+
+SRAM:
+Total: 128 × 1024 = 131,072 bytes
+Used: data + bss = 96 + 57,680 = 57,776 bytes
+Percent used: 57,776 / 131,072 = 44.08%
 ```
-| | Used | Total | % |
+| | Used | Total | |
 |---|---|---|---|
-| Flash | 24,392 | 512 KB | 4.65 |
-| SRAM | 57,776 | 128 KB | 44.08 |
+| Flash | 24,392 bytes | 512 KB | 4.65% |
+| SRAM | 57,776 bytes | 128 KB | 44.08%|
 
 ##### Task Stacks
-```
+| Task | Stack (words) | Stack (bytes) | Why |
+|---|---|---|---|
+| `vTaskSensorSample` | 512 | 2,048 | |
+| `vTaskSensorRead` | 512 | 2,048 | |
+| `vTaskController` | 512 | 2,048 | |
+| `vTaskRouter` | 2,048 | 8,192 | |
+| `vTaskTX` | 4,096 | 16,384 | |
+| `vTaskRX` | 2,048 | 8,192 | |
+| `vTaskLogger` | 1,024 | 4,096 | |
+| `vTaskWatchdogMonitor` | 512 | 2,048 | |
+| **Total** | **11,264** | **45,056** | |
+
+##### Task Stack Usage
+
+Measured via `uxTaskGetStackHighWaterMark(NULL)` - reports the minimum free stack ever recorded for that task during execution, used to validate allocated stack sizes against actual usage.
+
+```c
 UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
 ```
-| Task | Stack (words) | Stack (bytes) | Priority | HWM Remaining (words) | Used (words) | Why |
-|---|---|---|---|---|---|---|
-| `vTaskSensorSample` | 512 | 2,048 | 8 | | | |
-| `vTaskSensorRead` | 512 | 2,048 | 7 | | | |
-| `vTaskController` | 512 | 2,048 | 6 | | | |
-| `vTaskRouter` | 2,048 | 8,192 | 5 | | | |
-| `vTaskTX` | 4,096 | 16,384 | 4 | | | |
-| `vTaskRX` | 2,048 | 8,192 | 4 | | | |
-| `vTaskLogger` | 1,024 | 4,096 | 3 | | | |
-| `vTaskWatchdogMonitor` | 512 | 2,048 | 9 | | | |
-| **Total** | **11,264** | **45,056** | | | | |
+| Task | Stack (words) | HWM Remaining (words) | Used (words) |
+|---|---|---|---|
+| `vTaskSensorSample` | 512 | | |
+| `vTaskSensorRead` | 512 | | |
+| `vTaskController` | 512 | | |
+| `vTaskRouter` | 2,048 | | |
+| `vTaskTX` | 4,096 | | |
+| `vTaskRX` | 2,048 | | |
+| `vTaskLogger` | 1,024 | | |
+| `vTaskWatchdogMonitor` | 512 | | |
 
 **FreeRTOS Objects**  
 | Object | Count × Size | Total |
@@ -161,6 +175,26 @@ New sensor or device types can be added by extending the base classes, and new r
 | `vTaskRX` | 4 | Handles incoming commands from ESP32, sends ACKs |
 | `vTaskLogger` | 3 | Drains log queue, outputs over UART2 |
 | `vTaskWatchdogMonitor` | 9 | Checks task alive flags, kicks IWDG |
+
+##### FreeRTOS Task Priorities
+column 1 - Priority
+column 2 - task
+column 3 - reasoning
+/**
+     * Priorities  (in FreeRTOS, 0 = lowest priority)
+     * MAX_PRIORITIES = 16
+     * 
+     * Priority 14 → Timer service task
+     * Priority 9  → WatchdogMonitor
+     * Priority 8  → SensorSample
+     * Priority 7  → SensorRead
+     * Priority 6  → Controller
+     * Priority 5  → Router task
+     * Priority 4  → TX task
+     * Priority 4  → RX task
+     * Priority 3  → Logger
+     * Priority 0  → Idle task
+    */
 
 #### 🔗 FreeRTOS Resources
 | Resource | Type | Purpose |
@@ -220,7 +254,9 @@ Timeout    = (256 × 1250) / 32000 = 10 seconds
 **`RTC` - Sampling Clock**   
 Independent BCD timer/counter clocked by the internal LSI oscillator (32kHz).
 Provides accurate timestamps for each sensor sample. Currently used for
-timestamping.   
+timestamping.  
+**`Software Timer` - Sample Trigger**   
+....explanation
 
 ---
 ### 🔵 **UART Transport Protocol**

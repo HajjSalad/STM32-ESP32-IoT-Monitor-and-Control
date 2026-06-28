@@ -49,7 +49,7 @@ void vTaskWatchdogMonitor(void *pvParameters)
 
         // Check all tasks are alive
         if (task1_alive && task2_alive && task3_alive && task4_alive &&
-            task5_alive && task6_alive) 
+            task5_alive) 
         {
             iwdg_kick();            // Kick watchdog - all tasks healthy
 
@@ -59,7 +59,7 @@ void vTaskWatchdogMonitor(void *pvParameters)
             task3_alive = 0U;
             task4_alive = 0U;
             task5_alive = 0U;
-            task6_alive = 0U;
+            //task6_alive = 0U;
 
             snprintf(msg, sizeof(msg), "[WDM] All tasks alive — kicked");
             xRet = xQueueSend(xLogQueue, (const void *)msg, 0U);
@@ -68,8 +68,8 @@ void vTaskWatchdogMonitor(void *pvParameters)
         else 
         {
             // Log which tasks responses
-            snprintf(msg, sizeof(msg), "[WDM] FAULT T1:%d T2:%d T3:%d T4:%d T5:%d T6:%d ",
-                     task1_alive, task2_alive, task3_alive, task4_alive, task5_alive, task6_alive);
+            snprintf(msg, sizeof(msg), "[WDM] FAULT T1:%d T2:%d T3:%d T4:%d T5:%d",
+                     task1_alive, task2_alive, task3_alive, task4_alive, task5_alive);
             xRet = xQueueSend(xLogQueue, (const void *)msg, 0U);
             if (xRet != pdTRUE) { /* drop */ }
 
